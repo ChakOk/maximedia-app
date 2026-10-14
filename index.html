@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Максимедиа — мини-приложение</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--bg:#F1E9DD;--paper:#F8F3EA;--ink:#1F1A17;--mute:#7A6B5E;--or:#F26A0F;--or2:#FF8A2B;--line:rgba(31,26,23,.2);--strong:#1F1A17;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171210;--paper:#211A16;--ink:#F3EADD;--mute:#A8957F;--or:#FF7A1F;--line:rgba(243,234,221,.2);--strong:#F3EADD}}
+:root[data-theme="dark"]{--bg:#171210;--paper:#211A16;--ink:#F3EADD;--mute:#A8957F;--or:#FF7A1F;--line:rgba(243,234,221,.2);--strong:#F3EADD}
+*{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;color:var(--ink);font-family:Manrope,system-ui,sans-serif;background:var(--bg);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
+body::after{content:"";position:fixed;right:-120px;top:70px;width:300px;height:300px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 35% 30%,var(--or2),var(--or));opacity:.16}
+.app{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:18px 18px 110px}
+.brand{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--strong)}
+.brand svg{width:26px;height:26px;flex:none}
+.brand b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.brand span{display:block;font-size:10.5px;color:var(--mute);margin-top:3px}
+.brand i{margin-left:auto;font-style:normal;font-size:11px;font-weight:600;text-align:right;line-height:1.35}
+.page{display:none}
+.page.on{display:block}
+h1{font-weight:800;font-size:clamp(46px,15vw,72px);line-height:.92;letter-spacing:-.04em;margin:30px 0 12px;color:var(--or)}
+.sub{margin:0 0 22px;font-size:15px;line-height:1.4;font-weight:600;max-width:30ch;padding-left:12px;border-left:3px solid var(--or)}
+.card{background:var(--paper);border:1px solid var(--strong);border-radius:6px;padding:18px}
+label{display:block;font-size:12px;font-weight:700;margin:14px 0 6px;color:var(--mute)}
+label:first-of-type{margin-top:0}
+input,textarea,select{width:100%;font:500 16px Manrope,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:12px;outline:none}
+textarea{min-height:88px;resize:vertical}
+input:focus,textarea:focus,select:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(242,106,15,.18)}
+.go{width:100%;margin-top:20px;border:0;border-radius:4px;background:var(--or);color:#fff;font:800 16px Manrope,sans-serif;letter-spacing:.01em;padding:15px;cursor:pointer}
+.go:disabled{opacity:.5}
+.out{margin-top:18px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:16px;font-size:15px;line-height:1.55;white-space:pre-wrap;min-height:64px}
+.out b{display:block;font-size:12px;font-weight:800;color:var(--or);padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.out.empty{color:var(--mute)}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;margin-bottom:12px}
+.msg{max-width:85%;padding:10px 13px;font-weight:500;font-size:15px;line-height:1.45;border-radius:6px;white-space:pre-wrap}
+.msg.me{align-self:flex-end;background:var(--or);color:#fff}
+.msg.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
+.row{display:flex;gap:8px}
+.row .go{width:auto;margin:0;padding:0 20px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--strong);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));display:flex;gap:2px;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;z-index:5}
+nav button{flex:0 0 auto;padding-left:14px;padding-right:14px;border:0;background:transparent;color:var(--bg);font:700 12px Manrope,sans-serif;padding:12px 2px;border-radius:4px;cursor:pointer;opacity:.6}
+nav button.on{background:var(--or);color:#fff;opacity:1}
+nav.lock button:not(.on){opacity:.25;pointer-events:none}
+.foot{margin-top:26px;font-size:12px;font-weight:600;line-height:1.5;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+.foot::after{content:"";flex:none;width:72px;height:22px;background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px,var(--ink) 4px 5px,transparent 5px 8px)}
+.rolebar{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;color:var(--mute);padding:8px 0 0}
+.lnk{border:0;background:none;color:var(--or);font:700 12px Manrope,sans-serif;cursor:pointer;padding:4px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px}
+.kpi{border:1px solid var(--line);border-radius:4px;padding:10px;background:var(--bg)}
+.kpi b{display:block;font-size:18px;font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.kpi span{font-size:11px;color:var(--mute)}
+.list{margin-top:14px}.list>b{display:block;font-size:12px;color:var(--or);margin-bottom:6px}
+.list div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;font-weight:600}
+.note{font-size:13px;color:var(--mute);line-height:1.5}
+.out.plan{white-space:normal}
+.gwrap{overflow-x:auto;margin:0 -4px 12px;padding:0 4px}
+.gr{border-collapse:collapse;font-size:10px;text-align:center}
+.gr th,.gr td{border:1px solid var(--line);min-width:24px;height:22px;padding:1px 2px;font-weight:600}
+.gr th{color:var(--mute);font-weight:700;line-height:1.1}.gr th.we{color:var(--or)}
+.gr td.on{background:var(--or);color:#fff}
+.go.mini{margin-top:6px;font-size:14px;padding:11px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand"><svg viewBox="0 0 32 32" fill="none" stroke="#F26A0F" stroke-width="4.5" stroke-linecap="round"><path d="M16 3v26M4.7 9.5l22.6 13M4.7 22.5l22.6-13"/></svg><div><b>Максимедиа</b><span>Рекламное агентство в ТВ-размещении</span></div><i>Нижневартовск<br>Ваш бренд в каждом доме</i></div>
+  <div id="rolebar" class="rolebar"></div>
+  <main id="pages"></main>
+  <div class="foot">Планируем. Размещаем. Растим ваш бренд.</div>
+</div>
+<nav id="nav"></nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ===== НАСТРОЙКИ =====
+const CFG = {
+  makeWebhook: '4lxwl6wegyr51x9m44pwkwug5zpwg9tn@hook.eu2.make.com'   // URL вебхука Make. Пусто = демо-режим без сервера
+};
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const MONTHS=['ЯНВАРЬ','ФЕВРАЛЬ','МАРТ','АПРЕЛЬ','МАЙ','ИЮНЬ','ИЮЛЬ','АВГУСТ','СЕНТЯБРЬ','ОКТЯБРЬ','НОЯБРЬ','ДЕКАБРЬ'];
+const CH=['НТВ','ПЕРВЫЙ КАНАЛ','ПЯТНИЦА','РЕН ТВ','РОССИЯ 1','СТС','ТВ ЦЕНТР','ТВ-3','ТНТ','ДОМАШНИЙ'];
+const DAYSL=['нет',...Array.from({length:31},(_,i)=>String(i+1))];
+const sel=a=>'select:'+a.join(',');
+
+// ===== СТРАНИЦЫ (команды бота, без /start) =====
+const PAGES = [
+  {id:'create',cmd:'create',tab:'Текст',title:'Рекламный текст',tag:'Напишем объявление под вашу площадку',btn:'Создать',
+   fields:[['product','Что рекламируем','text'],['audience','Для кого','text'],['tone','Тон',sel(['Дерзкий','Деловой','Дружелюбный','Экспертный'])],['platform','Площадка',sel(['Telegram','Instagram','VK','Яндекс Директ'])]]},
+  {id:'chat',cmd:'chat',tab:'Чат',title:'Чат',tag:'Спросите что угодно о рекламе',chat:true},
+  {id:'of',cmd:'of',tab:'Оффер',title:'Оффер',tag:'Соберём предложение, которое цепляет',btn:'Собрать',
+   fields:[['product','Продукт / услуга','text'],['audience','Целевая аудитория','text'],['pain','Боль клиента','area'],['price','Цена / условия','text']]},
+  {id:'mplan',cmd:'mplan',tab:'Анализ',title:'Анализ компании',tag:'Разберём бизнес и конкурентов',btn:'Разобрать',
+   fields:[['company','Компания / сайт','text'],['niche','Ниша','text'],['rivals','Конкуренты','area']]},
+  {id:'excelcreat',cmd:'excelcreat',tab:'Медиаплан',title:'Медиаплан',tag:'Подберём канал и соберём план размещения',btn:'Рассчитать',
+   fields:[['budget','Бюджет, ₽','number',90000],['month','Месяц',sel(MONTHS),MONTHS[new Date().getMonth()]],['seconds','Длина ролика, сек','number',10],
+     ['gender','Пол аудитории',sel(['Все','Мужчины','Женщины'])],['age','Возраст',sel(['18+','16-24','25-39','40-54','55-64','65+'])],
+     ['city','Город',sel(['Нижневартовск','Тобольск','Ханты-Мансийск','Салехард'])],['days','Количество дней выхода','number',20],
+     ['channel','Ручной выбор канала',sel(['нет',...CH])],['start','Начать с числа',sel(DAYSL)],['end','Закончить числом',sel(DAYSL)]]}
+];
+// Страницы администратора: появляются только если сервер вернул role=admin
+const ADMIN = [
+  {id:'stats',tab:'Статистика',title:'Статистика',tag:'Кто и чем пользуется ботом',admin:true},
+  {id:'access',tab:'Доступ',title:'Доступ',tag:'Кому можно пользоваться ботом',admin:true},
+  {id:'db',tab:'База',title:'База Медиаскоп',tag:'Данные для расчётов. Видит и меняет только администратор',admin:true}
+];
+
+let role='user', me={name:''}, current='create', busy=false;
+const $=(s,r=document)=>r.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const pages=()=>role==='admin'?[...PAGES,...ADMIN]:PAGES;
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ===== СЕТЬ =====
+// Все запросы идут на один вебхук Make. Форма (не JSON) — чтобы браузер не делал предзапрос CORS.
+async function call(action,body={}){
+  const msg={action,initData:tg?tg.initData:'',...body};
+  const r=await fetch(CFG.makeWebhook,{method:'POST',body:new URLSearchParams({payload:JSON.stringify(msg)})});
+  if(!r.ok) throw new Error('Ошибка '+r.status);
+  const j=await r.json();
+  if(j.error) throw new Error(j.error);
+  return j;
+}
+let demoUsers=[{u:'@anna',s:'active'},{u:'@boris',s:'active'},{u:'@clara',s:'blocked'}];
+async function adminApi(path,opt={}){
+  if(CFG.makeWebhook){
+    if(path==='/admin/stats') return call('admin_stats');
+    if(path==='/admin/access') return call('admin_access',opt.body||{});
+    if(path==='/admin/db') return call('admin_db');
+  }
+  await sleep(250);
+  if(path==='/admin/stats') return {today:42,users:17,errors:1,byCmd:{create:12,chat:20,of:5,mplan:3,excelcreat:2},recent:['@anna · chat · 12:04','@boris · excelcreat · 11:52','@clara · create · 11:40']};
+  if(path==='/admin/access'){ if(opt.body){const u=demoUsers.find(x=>x.u===opt.body.user); if(u)u.s=opt.body.status; else demoUsers.push({u:opt.body.user,s:'active'});} return demoUsers; }
+  if(path==='/admin/db') return {name:'Данные Медиаскопа.xlsx',updated:'демо',rows:1000};
+}
+async function send(command,data){
+  if(CFG.makeWebhook){
+    const r=await call('run',{command,data});
+    if(!r.jobId) return r;                        // быстрые команды отвечают сразу
+    for(let i=0;i<80;i++){                        // медиаплан: ждём результат, опрашивая каждые 2,5 сек
+      await sleep(2500);
+      const p=await call('poll',{jobId:r.jobId});
+      if(p.status==='done') return p.result;
+      if(p.status==='error') throw new Error(p.error||'Ошибка расчёта');
+    }
+    throw new Error('Расчёт занял слишком долго');
+  }
+  await sleep(900); // демо без сервера
+  return command==='excelcreat'?demoPlan(data):{text:'[демо] Команда /'+command+'\n\n'+JSON.stringify(data,null,2)};
+}
+
+// ===== ДЕМО-МЕДИАПЛАН (заменится ответом сервера) =====
+const colL=n=>n<=26?String.fromCharCode(64+n):'A'+String.fromCharCode(64+n-26);
+function demoPlan(d){
+  const y=new Date().getFullYear(),mi=Math.max(0,MONTHS.indexOf(d.month)),first=new Date(y,mi,1);
+  const start=new Date(y,mi,1-first.getDay()), off=Math.round((first-start)/864e5)+(parseInt(d.start)||1)-1;
+  const wave=[1,2,3,3,2,1,0],wk=[19,8,21,10,23,12],we=[19,21,23,20,22,24],pl=[],sec=+d.seconds||10;
+  for(let i=0;i<(+d.days||20);i++){
+    const idx=off+i; if(idx>37)break; const dt=new Date(y,mi,idx-off+(parseInt(d.start)||1));
+    if(+d.end&&dt.getDate()>+d.end)break; if(dt.getMonth()!==mi)break;
+    const rows=(dt.getDay()%6===0?we:wk).slice(0,wave[i%7]);
+    rows.forEach(r=>pl.push({cell:colL(5+idx)+r,value:sec}));
+  }
+  return {demo:true,summary:{channel:d.channel!=='нет'?d.channel:'РЕН ТВ',strategy:'Пульсационная',ceff:'5,77 ₽',people:'15 601'},plan:{start:[start.getFullYear(),start.getMonth(),start.getDate()],placements:pl}};
+}
+function cellIdx(c){const m=/^([A-Z]+)(\d+)$/.exec(c);const n=[...m[1]].reduce((a,ch)=>a*26+ch.charCodeAt(0)-64,0);return [n-5,+m[2]];}
+function planModel(r){
+  const [y,m,d]=r.plan.start,dates=Array.from({length:38},(_,i)=>new Date(y,m,d+i)),map={};
+  r.plan.placements.forEach(p=>{const [c,row]=cellIdx(p.cell);map[row+'_'+c]=p.value;});
+  return {dates,map};
+}
+function renderPlan(box,r){
+  const {dates,map}=planModel(r),wd=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],S=r.summary;
+  let t='<table class="gr"><tr><th></th>'+dates.map(d=>`<th class="${d.getDay()%6===0?'we':''}">${d.getDate()}<br>${wd[d.getDay()]}</th>`).join('')+'</tr>';
+  for(let row=8;row<=24;row++) t+=`<tr><th>${row<19?'офф':'прайм'}</th>`+dates.map((d,c)=>`<td class="${map[row+'_'+c]?'on':''}">${map[row+'_'+c]||''}</td>`).join('')+'</tr>';
+  t+='</table>';
+  box.className='out plan';
+  box.innerHTML=`${r.demo?'<b>Демо-данные: расчёт на сервере ещё не подключён</b>':'<b>Медиаплан</b>'}
+  <div class="kpis">${[['Канал',S.channel],['Стратегия',S.strategy],['Цена эффективного зрителя',S.ceff],['Эффективных зрителей',S.people]].map(([l,v])=>`<div class="kpi"><b>${esc(v)}</b><span>${l}</span></div>`).join('')}</div>
+  <div class="gwrap">${t}</div><button class="go mini" id="dl">Скачать Excel</button>`;
+  $('#dl').onclick=()=>{
+    if(!window.XLSX){box.append('Библиотека Excel не загружена.');return;}
+    const rows=[['',...dates.map(d=>d.toLocaleDateString('ru-RU'))]];
+    for(let row=8;row<=24;row++) rows.push([row<19?'Офф-тайм '+row:'Прайм-тайм '+row,...dates.map((d,c)=>map[row+'_'+c]||'')]);
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Медиаплан');XLSX.writeFile(wb,'mediaplan.xlsx');
+  };
+}
+
+// ===== ОТРИСОВКА =====
+function fieldHTML([key,label,type,def]){
+  const v=def!=null?String(def):'';
+  if(type.startsWith('select:')) return `<label>${label}</label><select name="${key}">${type.slice(7).split(',').map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}</select>`;
+  if(type==='area') return `<label>${label}</label><textarea name="${key}"></textarea>`;
+  return `<label>${label}</label><input name="${key}" type="${type}" value="${v}" inputmode="${type==='number'?'numeric':'text'}">`;
+}
+function renderRole(){
+  $('#rolebar').innerHTML=`<span>${esc(me.name||'гость')} · ${role==='admin'?'администратор':'пользователь'}</span>`+(!tg&&!CFG.makeWebhook?'<button id="swap" class="lnk">превью: сменить роль</button>':'');
+}
+function render(){
+  const list=pages();
+  if(!list.some(p=>p.id===current)) current=list[0].id;
+  $('#pages').innerHTML=list.map(p=>`<section class="page" id="p-${p.id}"><h1>${p.title}</h1><p class="sub">${p.tag}</p>`+
+    (p.chat?`<div class="card"><div class="chat" id="chatlog"><div class="msg bot">Здравствуйте! Чем помочь?</div></div><div class="row"><input id="chatin" placeholder="Сообщение"><button class="go" id="chatsend">Ок</button></div></div>`
+    :p.admin?`<div class="card" id="a-${p.id}">Загрузка…</div>`
+    :`<div class="card" id="f-${p.id}">${p.fields.map(fieldHTML).join('')}<button class="go" data-run="${p.id}">${p.btn}</button></div><div class="out empty" id="o-${p.id}">Здесь появится результат.</div>`)+`</section>`).join('');
+  $('#nav').innerHTML=list.map(p=>`<button data-go="${p.id}">${p.tab}</button>`).join('');
+  renderRole(); show(current);
+}
+function show(id){
+  if(busy) return; current=id;
+  document.querySelectorAll('.page').forEach(el=>el.classList.toggle('on',el.id==='p-'+id));
+  document.querySelectorAll('nav button').forEach(b=>{const on=b.dataset.go===id;b.classList.toggle('on',on);if(on)b.scrollIntoView({inline:'center',block:'nearest'});});
+  window.scrollTo(0,0);
+  if(role==='admin'&&ADMIN.some(p=>p.id===id)) loadAdmin(id);
+}
+function setBusy(v){busy=v;$('#nav').classList.toggle('lock',v);document.querySelectorAll('.go').forEach(b=>b.disabled=v);}
+
+// ===== АДМИНКА =====
+const kpi=a=>`<div class="kpis">${a.map(([l,v])=>`<div class="kpi"><b>${esc(v)}</b><span>${l}</span></div>`).join('')}</div>`;
+async function loadAdmin(id){
+  const box=$('#a-'+id);
+  try{
+    if(id==='stats'){const s=await adminApi('/admin/stats');
+      box.innerHTML=kpi([['Запросов сегодня',s.today],['Пользователей',s.users],['Ошибок',s.errors]])+`<div class="list"><b>По командам</b>${Object.entries(s.byCmd).map(([k,v])=>`<div><span>/${k}</span><span>${v}</span></div>`).join('')}</div><div class="list"><b>Последние запросы</b>${s.recent.map(x=>`<div><span>${esc(x)}</span></div>`).join('')}</div>`;}
+    if(id==='access'){const u=await adminApi('/admin/access');
+      box.innerHTML=`<div class="list">${u.map(x=>`<div><span>${esc(x.u)} · ${x.s==='active'?'доступ есть':'заблокирован'}</span><button class="lnk" data-tog="${esc(x.u)}" data-st="${x.s==='active'?'blocked':'active'}">${x.s==='active'?'Заблокировать':'Вернуть'}</button></div>`).join('')}</div><label>Добавить пользователя</label><div class="row"><input id="newu" placeholder="@username"><button class="go" id="addu">Ок</button></div>`;}
+    if(id==='db'){const d=await adminApi('/admin/db');
+      box.innerHTML=kpi([['Файл',d.name],['Обновлено',d.updated],['Строк',d.rows]])+`<p class="note">База лежит в приватной Google-таблице и открыта только вам. Правьте её там: каждый расчёт читает свежие данные.</p>`;}
+  }catch(e){box.textContent='Не удалось загрузить: '+e.message;}
+}
+
+// ===== ЗАПУСК КОМАНД =====
+async function run(id){
+  const p=PAGES.find(x=>x.id===id),box=$('#o-'+id),data={};
+  $('#f-'+id).querySelectorAll('[name]').forEach(el=>data[el.name]=el.value.trim());
+  if(!Object.values(data).some(v=>v)){box.className='out empty';box.textContent='Заполни хотя бы одно поле.';return;}
+  setBusy(true);box.className='out empty';box.textContent='Считаем…';
+  try{
+    const r=await send(p.cmd,data);
+    if(r&&r.plan) renderPlan(box,r);
+    else{box.className='out';box.innerHTML='<b>'+p.title+'</b>';box.append(document.createTextNode(typeof r==='string'?r:(r.text||r.result||JSON.stringify(r))));}
+  }catch(e){box.className='out';box.textContent='Не удалось выполнить: '+e.message;}
+  setBusy(false);
+}
+async function chat(){
+  const inp=$('#chatin'),log=$('#chatlog'),text=inp.value.trim(); if(!text)return;
+  const add=(c,t)=>{const m=document.createElement('div');m.className='msg '+c;m.textContent=t;log.append(m);log.scrollTop=log.scrollHeight;return m;};
+  add('me',text);inp.value='';setBusy(true);const w=add('bot','…');
+  try{const r=await send('chat',{message:text});w.textContent=typeof r==='string'?r:(r.text||r.result||'Пустой ответ');}catch(e){w.textContent='Ошибка: '+e.message;}
+  setBusy(false);
+}
+
+document.addEventListener('click',async e=>{
+  const g=e.target.closest('[data-go]'); if(g) return show(g.dataset.go);
+  const r=e.target.closest('[data-run]'); if(r&&!busy) return run(r.dataset.run);
+  if(e.target.id==='chatsend'&&!busy) return chat();
+  if(e.target.id==='swap'){role=role==='admin'?'user':'admin';me.name=role==='admin'?'@matt_lum (демо)':'@user (демо)';return render();}
+  const t=e.target.closest('[data-tog]'); if(t){await adminApi('/admin/access',{body:{user:t.dataset.tog,status:t.dataset.st}});return loadAdmin('access');}
+  if(e.target.id==='addu'){const v=$('#newu').value.trim();if(v){await adminApi('/admin/access',{body:{user:v.startsWith('@')?v:'@'+v,status:'active'}});loadAdmin('access');}}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='chatin'&&!busy)chat();});
+
+(async function init(){
+  if(CFG.makeWebhook){try{const r=await call('me');role=r.role;me={name:r.name};}catch(e){role='user';}}
+  else if(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user){me.name='@'+(tg.initDataUnsafe.user.username||tg.initDataUnsafe.user.id);}
+  render();
+})();
+</script>
+</body>
+</html>
