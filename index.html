@@ -57,6 +57,10 @@ nav.lock button:not(.on){opacity:.25;pointer-events:none}
 .list div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;font-weight:600}
 .note{font-size:13px;color:var(--mute);line-height:1.5}
 .out.plan{white-space:normal}
+.acts{white-space:normal;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.hist{margin-top:10px;display:flex;flex-direction:column;gap:2px}
+.hist .lnk{text-align:left;font-weight:600;color:var(--mute)}
+.hist span{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
 .gwrap{overflow-x:auto;margin:0 -4px 12px;padding:0 4px}
 .gr{border-collapse:collapse;font-size:10px;text-align:center}
 .gr th,.gr td{border:1px solid var(--line);min-width:24px;height:22px;padding:1px 2px;font-weight:600}
@@ -94,7 +98,7 @@ const PAGES = [
   {id:'create',cmd:'create',tab:'Текст',title:'Рекламный текст',tag:'Напишем объявление под вашу площадку',btn:'Создать',
    fields:[['company','Название компании','text'],['product','Продукт / услуга и её особенности','area'],['audience','Целевая аудитория','text'],['goal','Цель рекламы','text'],['format','Формат',sel(['Стандартный (10 сек)','Короткий (5 сек)','Расширенный (15 сек)'])],['tone','Тональность',sel(['Серьёзная','Юмористическая','Эмоциональная'])],['kind','Тип рекламы',sel(['Видео','Текст'])],['place','Адрес компании','text'],['phone','Контактный телефон','text'],['idea','Ключевая идея (если есть)','text'],['script','Проверка: вставьте готовый сценарий (тогда новый писать не будем)','area']]},
   {id:'chat',cmd:'chat',tab:'Чат',title:'Чат',tag:'Спросите что угодно о рекламе',chat:true},
-  {id:'of',cmd:'of',tab:'Оффер',title:'Оффер',tag:'Соберём предложение, которое цепляет',btn:'Собрать',
+  {id:'of',cmd:'of',word:true,tab:'Оффер',title:'Оффер',tag:'Соберём предложение, которое цепляет',btn:'Собрать',
    fields:[['category','Для кого (категория бизнеса)','text'],['strategy','Стратегия и настроение',sel(['Рост и развитие','Борьба','Выживание'])],['pack','Пакет: что входит, цена, каналы','area'],['rivals','Конкуренты (до 10 компаний)','area'],['events','События и обстоятельства','area']]},
   {id:'mplan',cmd:'mplan',tab:'Анализ',title:'Анализ компании',tag:'Разберём бизнес и конкурентов',btn:'Разобрать',
    fields:[['company','Компания','text'],['industry','Отрасль','text'],['city','Город размещения','text','Нижневартовск'],['goal','Главная цель исследования',sel(['Найти точки роста','Подготовиться к встрече','Понять маркетинг компании','Сделать коммерческое предложение','Изучить конкурента','Разработать ТВ-кампанию'])],['site','Сайт компании (необязательно)','text']]},
@@ -200,17 +204,18 @@ function fieldHTML([key,label,type,def]){
   return `<label>${label}</label><input name="${key}" type="${type}" value="${v}" inputmode="${type==='number'?'numeric':'text'}">`;
 }
 function renderRole(){
-  $('#rolebar').innerHTML=`<span>${esc(me.name||'гость')} · ${role==='admin'?'администратор':'пользователь'}</span>`+(!tg&&!CFG.makeWebhook?'<button id="swap" class="lnk">превью: сменить роль</button>':'');
+  $('#rolebar').innerHTML=`<span>${esc(me.name||'гость')} · ${role==='admin'?'администратор':'пользователь'}</span>`+'<button id="clr" class="lnk">очистить историю</button>'+(!tg&&!CFG.makeWebhook?'<button id="swap" class="lnk">превью: сменить роль</button>':'');
 }
 function render(){
+  loadStore();
   const list=pages();
   if(!list.some(p=>p.id===current)) current=list[0].id;
   $('#pages').innerHTML=list.map(p=>`<section class="page" id="p-${p.id}"><h1>${p.title}</h1><p class="sub">${p.tag}</p>`+
     (p.chat?`<div class="card"><div class="chat" id="chatlog"><div class="msg bot">Здравствуйте! Чем помочь?</div></div><div class="row"><input id="chatin" placeholder="Сообщение"><button class="go" id="chatsend">Ок</button></div></div>`
     :p.admin?`<div class="card" id="a-${p.id}">Загрузка…</div>`
-    :`<div class="card" id="f-${p.id}">${p.fields.map(fieldHTML).join('')}<button class="go" data-run="${p.id}">${p.btn}</button></div><div class="out empty" id="o-${p.id}">Здесь появится результат.</div>`)+`</section>`).join('');
+    :`<div class="card" id="f-${p.id}">${p.fields.map(fieldHTML).join('')}<button class="go" data-run="${p.id}">${p.btn}</button></div><div class="out empty" id="o-${p.id}">Здесь появится результат.</div><div class="hist" id="h-${p.id}"></div>`)+`</section>`).join('');
   $('#nav').innerHTML=list.map(p=>`<button data-go="${p.id}">${p.tab}</button>`).join('');
-  renderRole(); show(current);
+  renderRole(); restoreAll(); show(current);
 }
 function show(id){
   if(busy) return; current=id;
@@ -236,29 +241,138 @@ async function loadAdmin(id){
 }
 
 // ===== ЗАПУСК КОМАНД =====
+// ===== ИСТОРИЯ (хранится на устройстве, отдельно для каждого пользователя) =====
+let store={};
+const SKEY=()=>'mm1:'+(me.name||'guest');
+function loadStore(){try{store=JSON.parse(localStorage.getItem(SKEY())||'{}')||{};}catch(e){store={};}}
+function saveStore(){try{localStorage.setItem(SKEY(),JSON.stringify(store));}catch(e){}}
+function formData(id){const d={};$('#f-'+id).querySelectorAll('[name]').forEach(el=>d[el.name]=el.value.trim());return d;}
+function fillForm(id,d){$('#f-'+id).querySelectorAll('[name]').forEach(el=>{if(d&&d[el.name]!=null)el.value=d[el.name];});}
+function keep(id,data,text,plan){
+  const rec=store[id]||{hist:[]};
+  rec.data=data;rec.text=text||'';rec.plan=plan||null;
+  const sum=plan?'Медиаплан · '+plan.summary.channel:text;
+  rec.hist=[{ts:Date.now(),data,text:text||'',plan:plan||null,sum:String(sum).replace(/\s+/g,' ').slice(0,56)},...(rec.hist||[])].slice(0,10);
+  store[id]=rec;saveStore();renderHist(id);
+}
+function renderHist(id){
+  const h=$('#h-'+id);if(!h)return;const l=(store[id]&&store[id].hist)||[];
+  h.innerHTML=l.length?'<span>История</span>'+l.map((x,i)=>{const d=new Date(x.ts);
+    const t=String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    return `<button class="lnk" data-hid="${id}" data-hist="${i}">${t} · ${esc(x.sum)}</button>`;}).join(''):'';
+}
+function showText(p,box,txt){
+  box.className='out';box.innerHTML='<b>'+p.title+'</b>';box.append(document.createTextNode(txt));
+  const ac=document.createElement('div');ac.className='acts';
+  ac.innerHTML='<input class="rv" placeholder="Что изменить? Например: короче, веселее">'+
+    `<button class="go mini" data-rev="${p.id}">Доработать</button>`+(p.word?`<button class="go mini" data-word="${p.id}">Скачать Word</button>`:'');
+  box.append(ac);
+}
+function showRec(p,box,rec){
+  if(rec.plan) renderPlan(box,rec.plan);
+  else if(rec.text) showText(p,box,rec.text);
+}
+function openHist(id,i){
+  const p=PAGES.find(x=>x.id===id),rec=store[id],e=rec&&rec.hist&&rec.hist[i];if(!e)return;
+  fillForm(id,e.data);rec.data=e.data;rec.text=e.text;rec.plan=e.plan;saveStore();
+  showRec(p,$('#o-'+id),e);window.scrollTo(0,$('#o-'+id).offsetTop-80);
+}
+function chatAdd(c,t){const log=$('#chatlog');const m=document.createElement('div');m.className='msg '+c;m.textContent=t;log.append(m);log.scrollTop=log.scrollHeight;return m;}
+function restoreAll(){
+  PAGES.forEach(p=>{
+    if(p.chat){(store.chat||[]).forEach(m=>chatAdd(m.c,m.t));return;}
+    const rec=store[p.id];if(!rec)return;
+    fillForm(p.id,rec.data);showRec(p,$('#o-'+p.id),rec);renderHist(p.id);
+  });
+}
+function clearHistory(){
+  const go=()=>{store={};saveStore();render();};
+  if(tg&&tg.showConfirm) tg.showConfirm('Очистить сохранённую историю?',ok=>{if(ok)go();}); else if(confirm('Очистить сохранённую историю?')) go();
+}
+
+// ===== ЗАПУСК КОМАНД =====
+const textOf=r=>typeof r==='string'?r:(r.text||r.result||JSON.stringify(r));
 async function run(id){
-  const p=PAGES.find(x=>x.id===id),box=$('#o-'+id),data={};
-  $('#f-'+id).querySelectorAll('[name]').forEach(el=>data[el.name]=el.value.trim());
+  const p=PAGES.find(x=>x.id===id),box=$('#o-'+id),data=formData(id);
   if(!Object.values(data).some(v=>v)){box.className='out empty';box.textContent='Заполни хотя бы одно поле.';return;}
   setBusy(true);box.className='out empty';box.textContent='Считаем…';
   try{
     const r=await send(p.cmd,data);
-    if(r&&r.plan) renderPlan(box,r);
-    else{box.className='out';box.innerHTML='<b>'+p.title+'</b>';box.append(document.createTextNode(typeof r==='string'?r:(r.text||r.result||JSON.stringify(r))));}
+    if(r&&r.plan){renderPlan(box,r);keep(id,data,'',r);}
+    else{const t=textOf(r);showText(p,box,t);keep(id,data,t);}
   }catch(e){box.className='out';box.textContent='Не удалось выполнить: '+e.message;}
   setBusy(false);
 }
-async function chat(){
-  const inp=$('#chatin'),log=$('#chatlog'),text=inp.value.trim(); if(!text)return;
-  const add=(c,t)=>{const m=document.createElement('div');m.className='msg '+c;m.textContent=t;log.append(m);log.scrollTop=log.scrollHeight;return m;};
-  add('me',text);inp.value='';setBusy(true);const w=add('bot','…');
-  try{const r=await send('chat',{message:text});w.textContent=typeof r==='string'?r:(r.text||r.result||'Пустой ответ');}catch(e){w.textContent='Ошибка: '+e.message;}
+async function revise(id){
+  const p=PAGES.find(x=>x.id===id),box=$('#o-'+id),rec=store[id],ins=(box.querySelector('.rv')||{}).value;
+  if(!rec||!rec.text||!ins||!ins.trim())return;
+  const base=formData(id),data={...base,previous:rec.text,revise:ins.trim()};
+  setBusy(true);box.className='out empty';box.textContent='Дорабатываем…';
+  try{const t=textOf(await send(p.cmd,data));showText(p,box,t);keep(id,base,t);}
+  catch(e){showText(p,box,'Не удалось доработать: '+e.message+'\n\n'+rec.text);}
   setBusy(false);
+}
+async function chat(){
+  const inp=$('#chatin'),text=inp.value.trim();if(!text)return;
+  const prev=(store.chat||[]).slice(-8).map(m=>(m.c==='me'?'Пользователь: ':'Ассистент: ')+m.t).join('\n').slice(-3000);
+  chatAdd('me',text);inp.value='';setBusy(true);const w=chatAdd('bot','…');
+  try{
+    const r=await send('chat',{message:prev?'Предыдущий диалог:\n'+prev+'\n\nНовое сообщение пользователя: '+text:text});
+    const t=typeof r==='string'?r:(r.text||r.result||'Пустой ответ');w.textContent=t;
+    store.chat=[...(store.chat||[]),{c:'me',t:text},{c:'bot',t}].slice(-60);saveStore();
+  }catch(e){w.textContent='Ошибка: '+e.message;}
+  setBusy(false);
+}
+
+// ===== WORD (.docx без внешних библиотек) =====
+const CRCT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRCT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function zipStore(files,type){
+  const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+  const u16=n=>[n&255,(n>>8)&255],u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
+  files.forEach(([name,str])=>{
+    const data=enc.encode(str),nb=enc.encode(name),crc=crc32(data);
+    const lh=new Uint8Array([0x50,0x4b,3,4,...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0),...nb]);
+    parts.push(lh,data);
+    cd.push(new Uint8Array([0x50,0x4b,1,2,...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off),...nb]));
+    off+=lh.length+data.length;
+  });
+  const cs=cd.reduce((a,b)=>a+b.length,0);
+  const end=new Uint8Array([0x50,0x4b,5,6,...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cs),...u32(off),...u16(0)]);
+  return new Blob([...parts,...cd,end],{type});
+}
+function docxBlob(text){
+  const x=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const lines=String(text).replace(/\r/g,'').replace(/\*\*/g,'').replace(/^#+\s*/gm,'').split('\n');
+  const body=lines.map((l,i)=>{const bold=i===0||/^Пакет\b/.test(l);
+    return '<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>'+(bold?'<w:b/><w:sz w:val="30"/>':'<w:sz w:val="24"/>')+'</w:rPr><w:t xml:space="preserve">'+x(l)+'</w:t></w:r></w:p>';}).join('');
+  const NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  return zipStore([
+    ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+    ['word/document.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document '+NS+'><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>']
+  ],'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+}
+async function saveBlob(blob,name){
+  try{const f=new File([blob],name,{type:blob.type});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return;}
+  }catch(e){if(e&&e.name==='AbortError')return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
+}
+function wordDl(id){
+  const rec=store[id];if(!rec||!rec.text)return;
+  const d=new Date(),n=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  saveBlob(docxBlob(rec.text),'offer-'+n+'.docx');
 }
 
 document.addEventListener('click',async e=>{
   const g=e.target.closest('[data-go]'); if(g) return show(g.dataset.go);
   const r=e.target.closest('[data-run]'); if(r&&!busy) return run(r.dataset.run);
+  const rv=e.target.closest('[data-rev]'); if(rv&&!busy) return revise(rv.dataset.rev);
+  const wd=e.target.closest('[data-word]'); if(wd) return wordDl(wd.dataset.word);
+  const hh=e.target.closest('[data-hist]'); if(hh&&!busy) return openHist(hh.dataset.hid,+hh.dataset.hist);
+  if(e.target.id==='clr') return clearHistory();
   if(e.target.id==='chatsend'&&!busy) return chat();
   if(e.target.id==='swap'){role=role==='admin'?'user':'admin';me.name=role==='admin'?'@matt_lum (демо)':'@user (демо)';return render();}
   const t=e.target.closest('[data-tog]'); if(t){await adminApi('/admin/access',{body:{user:t.dataset.tog,status:t.dataset.st}});return loadAdmin('access');}
