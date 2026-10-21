@@ -57,6 +57,7 @@ nav.lock button:not(.on){opacity:.25;pointer-events:none}
 .list div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;font-weight:600}
 .note{font-size:13px;color:var(--mute);line-height:1.5}
 .out.plan{white-space:normal}
+.note{white-space:normal;font-size:13px;line-height:1.5;color:var(--mute);margin:10px 0 4px}
 .acts{white-space:normal;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
 .hist{margin-top:10px;display:flex;flex-direction:column;gap:2px}
 .hist .lnk{text-align:left;font-weight:600;color:var(--mute)}
@@ -187,6 +188,7 @@ function renderPlan(box,r){
   box.className='out plan';
   box.innerHTML=`${r.demo?'<b>Демо-данные: расчёт на сервере ещё не подключён</b>':'<b>Медиаплан</b>'}
   <div class="kpis">${[['Канал',S.channel],['Стратегия',S.strategy],['Цена эффективного зрителя',S.ceff],['Эффективных зрителей',S.people]].map(([l,v])=>`<div class="kpi"><b>${esc(v)}</b><span>${l}</span></div>`).join('')}</div>
+  ${r.info?`<div class="note">Выходов: ${r.info.spots} из ${r.info.maxSpots} · период: ${esc(r.info.period)} · по тарифу канала ≈ ${r.info.tariffTotal.toLocaleString('ru-RU')} ₽ при бюджете ${r.info.budget.toLocaleString('ru-RU')} ₽${(r.info.warnings||[]).map(w=>'<br>⚠ '+esc(w)).join('')}</div>`:''}
   <div class="gwrap">${t}</div><button class="go mini" id="dl">Скачать Excel</button>`;
   $('#dl').onclick=()=>{
     if(!window.XLSX){box.append('Библиотека Excel не загружена.');return;}
