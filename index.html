@@ -151,7 +151,7 @@ async function send(command,data){
     for(let i=0;i<60;i++){                        // медиаплан: ждём результат, опрашивая каждые 4 сек
       await sleep(4000);
       const p=await call('poll',{jobId:r.jobId});
-      if(p.status==='done') return p.result;
+      if(p.status==='done'){ if(p.result==null||p.result==='') throw new Error('Make закончил расчёт, но результат пуст. Проверьте в Make модули 14 и 15 (запись result).'); return p.result; }
       if(p.status==='error') throw new Error(p.error||'Ошибка расчёта');
     }
     throw new Error('Расчёт занял слишком долго');
@@ -297,7 +297,7 @@ function clearHistory(){
 }
 
 // ===== ЗАПУСК КОМАНД =====
-const textOf=r=>typeof r==='string'?r:(r.text||r.result||JSON.stringify(r));
+const textOf=r=>r==null?'Пустой ответ':typeof r==='string'?r:(r.text||r.result||JSON.stringify(r));
 async function run(id){
   const p=PAGES.find(x=>x.id===id),box=$('#o-'+id),data=formData(id);
   if(!Object.values(data).some(v=>v)){box.className='out empty';box.textContent='Заполни хотя бы одно поле.';return;}
