@@ -132,7 +132,7 @@ async function call(action,body={}){
   if(j.error) throw new Error(j.error);
   return j;
 }
-let demoUsers=[{u:'@anna',s:'active'},{u:'@boris',s:'active'},{u:'@clara',s:'blocked'}];
+let demoUsers=[{u:'@anna',s:'active'},{u:'@boris',s:'active'},{u:'@clara',s:'blocked'},{u:'@denis',s:'pending'}],demoMode='list',demoLim=100;
 async function adminApi(path,opt={}){
   if(CFG.makeWebhook){
     if(path==='/admin/stats') return call('admin_stats');
@@ -141,8 +141,8 @@ async function adminApi(path,opt={}){
   }
   await sleep(250);
   if(path==='/admin/stats') return {today:42,users:17,errors:1,byCmd:{create:12,chat:20,of:5,mplan:3,excelcreat:2},recent:['@anna · chat · 12:04','@boris · excelcreat · 11:52','@clara · create · 11:40']};
-  if(path==='/admin/access'){ if(opt.body){const u=demoUsers.find(x=>x.u===opt.body.user); if(u)u.s=opt.body.status; else demoUsers.push({u:opt.body.user,s:'active'});} return demoUsers; }
-  if(path==='/admin/db') return {name:'Данные Медиаскопа.xlsx',updated:'демо',rows:1000};
+  if(path==='/admin/access'){ const b=opt.body||{}; if(b.user){const u=demoUsers.find(x=>x.u===b.user); if(u)u.s=b.status; else demoUsers.push({u:b.user,s:b.status||'active'});} if(b.mode)demoMode=b.mode; if(b.limit)demoLim=+b.limit; return {mode:demoMode,limit:demoLim,users:demoUsers.map(x=>({...x,today:3}))}; }
+  if(path==='/admin/db') return {name:'Данные Медиаскопа',updated:'демо'};
 }
 async function send(command,data){
   if(CFG.makeWebhook){
@@ -235,10 +235,14 @@ async function loadAdmin(id){
   try{
     if(id==='stats'){const s=await adminApi('/admin/stats');
       box.innerHTML=kpi([['Запросов сегодня',s.today],['Пользователей',s.users],['Ошибок',s.errors]])+`<div class="list"><b>По командам</b>${Object.entries(s.byCmd).map(([k,v])=>`<div><span>/${k}</span><span>${v}</span></div>`).join('')}</div><div class="list"><b>Последние запросы</b>${s.recent.map(x=>`<div><span>${esc(x)}</span></div>`).join('')}</div>`;}
-    if(id==='access'){const u=await adminApi('/admin/access');
-      box.innerHTML=`<div class="list">${u.map(x=>`<div><span>${esc(x.u)} · ${x.s==='active'?'доступ есть':'заблокирован'}</span><button class="lnk" data-tog="${esc(x.u)}" data-st="${x.s==='active'?'blocked':'active'}">${x.s==='active'?'Заблокировать':'Вернуть'}</button></div>`).join('')}</div><label>Добавить пользователя</label><div class="row"><input id="newu" placeholder="@username"><button class="go" id="addu">Ок</button></div>`;}
+    if(id==='access'){const a=await adminApi('/admin/access');const u=Array.isArray(a)?a:a.users,mode=a.mode||'list',lim=a.limit||'';
+      const lbl={active:'доступ есть',blocked:'заблокирован',pending:'ждёт разрешения'};
+      box.innerHTML=`<div class="list"><div><span>Режим: ${mode==='open'?'открытый (любой пользователь Telegram)':'только по списку'}</span><button class="lnk" data-mode="${mode==='open'?'list':'open'}">${mode==='open'?'Только по списку':'Открыть для всех'}</button></div></div>`+
+        `<div class="list">${u.map(x=>`<div><span>${esc(x.u)} · ${lbl[x.s]||esc(x.s)}${x.today!=null?' · сегодня '+x.today:''}</span><span>${x.s!=='active'?`<button class="lnk" data-tog="${esc(x.u)}" data-st="active">${x.s==='pending'?'Разрешить':'Вернуть'}</button>`:''}${x.s!=='blocked'?`<button class="lnk" data-tog="${esc(x.u)}" data-st="blocked">Заблокировать</button>`:''}</span></div>`).join('')}</div>`+
+        `<label>Добавить пользователя</label><div class="row"><input id="newu" placeholder="@username"><button class="go" id="addu">Ок</button></div>`+
+        `<label>Лимит запросов на человека в день</label><div class="row"><input id="lim" type="number" value="${esc(lim)}"><button class="go" id="setlim">Ок</button></div>`;}
     if(id==='db'){const d=await adminApi('/admin/db');
-      box.innerHTML=kpi([['Файл',d.name],['Обновлено',d.updated],['Строк',d.rows]])+`<p class="note">База лежит в приватной Google-таблице и открыта только вам. Правьте её там: каждый расчёт читает свежие данные.</p>`;}
+      box.innerHTML=kpi([['База',d.name],['Данные за',d.updated]])+`<p class="note">Данные Медиаскопа (цены, охваты, рейтинги, население) зашиты в модуль расчёта в Make. Чтобы обновить базу, пришлите новый Excel — модуль пересоберём.</p>`;}
   }catch(e){box.textContent='Не удалось загрузить: '+e.message;}
 }
 
@@ -377,13 +381,15 @@ document.addEventListener('click',async e=>{
   if(e.target.id==='clr') return clearHistory();
   if(e.target.id==='chatsend'&&!busy) return chat();
   if(e.target.id==='swap'){role=role==='admin'?'user':'admin';me.name=role==='admin'?'@matt_lum (демо)':'@user (демо)';return render();}
+  const md=e.target.closest('[data-mode]'); if(md){await adminApi('/admin/access',{body:{mode:md.dataset.mode}});return loadAdmin('access');}
+  if(e.target.id==='setlim'){const v=$('#lim').value.trim();if(v){await adminApi('/admin/access',{body:{limit:v}});loadAdmin('access');}return;}
   const t=e.target.closest('[data-tog]'); if(t){await adminApi('/admin/access',{body:{user:t.dataset.tog,status:t.dataset.st}});return loadAdmin('access');}
   if(e.target.id==='addu'){const v=$('#newu').value.trim();if(v){await adminApi('/admin/access',{body:{user:v.startsWith('@')?v:'@'+v,status:'active'}});loadAdmin('access');}}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='chatin'&&!busy)chat();});
 
 (async function init(){
-  if(CFG.makeWebhook){try{const r=await call('me');role=r.role;me={name:r.name};}catch(e){role='user';}}
+  if(CFG.makeWebhook){try{const r=await call('me');role=r.role;me={name:r.name};}catch(e){role='user';if(/оступ/.test(e.message)){document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:#f1e9dc">'+esc(e.message)+'</div>';return;}}}
   else if(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user){me.name='@'+(tg.initDataUnsafe.user.username||tg.initDataUnsafe.user.id);}
   render();
 })();
