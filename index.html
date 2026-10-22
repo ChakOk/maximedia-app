@@ -3,395 +3,2076 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Максимедиа — мини-приложение</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; media-src https://*.supabase.co; connect-src https://*.supabase.co wss://*.supabase.co; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>ДнД-проект: стол мастера</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-:root{--bg:#F1E9DD;--paper:#F8F3EA;--ink:#1F1A17;--mute:#7A6B5E;--or:#F26A0F;--or2:#FF8A2B;--line:rgba(31,26,23,.2);--strong:#1F1A17;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171210;--paper:#211A16;--ink:#F3EADD;--mute:#A8957F;--or:#FF7A1F;--line:rgba(243,234,221,.2);--strong:#F3EADD}}
-:root[data-theme="dark"]{--bg:#171210;--paper:#211A16;--ink:#F3EADD;--mute:#A8957F;--or:#FF7A1F;--line:rgba(243,234,221,.2);--strong:#F3EADD}
+:root{--sea:#0f2a3a;--deep:#081822;--brass:#c9a24b;--foam:#e8eef0;--muted:#8aa3ae;--ok:#6fbf8b;--bad:#e07a6a;--line:#1d4256}
 *{box-sizing:border-box}
-html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;min-height:100%;color:var(--ink);font-family:Manrope,system-ui,sans-serif;background:var(--bg);overflow-x:hidden}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
-body::after{content:"";position:fixed;right:-120px;top:70px;width:300px;height:300px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 35% 30%,var(--or2),var(--or));opacity:.16}
-.app{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:18px 18px 110px}
-.brand{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--strong)}
-.brand svg{width:26px;height:26px;flex:none}
-.brand b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1}
-.brand span{display:block;font-size:10.5px;color:var(--mute);margin-top:3px}
-.brand i{margin-left:auto;font-style:normal;font-size:11px;font-weight:600;text-align:right;line-height:1.35}
-.page{display:none}
-.page.on{display:block}
-h1{font-weight:800;font-size:clamp(46px,15vw,72px);line-height:.92;letter-spacing:-.04em;margin:30px 0 12px;color:var(--or)}
-.sub{margin:0 0 22px;font-size:15px;line-height:1.4;font-weight:600;max-width:30ch;padding-left:12px;border-left:3px solid var(--or)}
-.card{background:var(--paper);border:1px solid var(--strong);border-radius:6px;padding:18px}
-label{display:block;font-size:12px;font-weight:700;margin:14px 0 6px;color:var(--mute)}
-label:first-of-type{margin-top:0}
-input,textarea,select{width:100%;font:500 16px Manrope,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:12px;outline:none}
-textarea{min-height:88px;resize:vertical}
-input:focus,textarea:focus,select:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(242,106,15,.18)}
-.go{width:100%;margin-top:20px;border:0;border-radius:4px;background:var(--or);color:#fff;font:800 16px Manrope,sans-serif;letter-spacing:.01em;padding:15px;cursor:pointer}
-.go:disabled{opacity:.5}
-.out{margin-top:18px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:16px;font-size:15px;line-height:1.55;white-space:pre-wrap;min-height:64px}
-.out b{display:block;font-size:12px;font-weight:800;color:var(--or);padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--line)}
-.out.empty{color:var(--mute)}
-.chat{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;margin-bottom:12px}
-.msg{max-width:85%;padding:10px 13px;font-weight:500;font-size:15px;line-height:1.45;border-radius:6px;white-space:pre-wrap}
-.msg.me{align-self:flex-end;background:var(--or);color:#fff}
-.msg.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
-.row{display:flex;gap:8px}
-.row .go{width:auto;margin:0;padding:0 20px}
-nav{position:fixed;left:0;right:0;bottom:0;background:var(--strong);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));display:flex;gap:2px;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;z-index:5}
-nav button{flex:0 0 auto;padding-left:14px;padding-right:14px;border:0;background:transparent;color:var(--bg);font:700 12px Manrope,sans-serif;padding:12px 2px;border-radius:4px;cursor:pointer;opacity:.6}
-nav button.on{background:var(--or);color:#fff;opacity:1}
-nav.lock button:not(.on){opacity:.25;pointer-events:none}
-.foot{margin-top:26px;font-size:12px;font-weight:600;line-height:1.5;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
-.foot::after{content:"";flex:none;width:72px;height:22px;background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px,var(--ink) 4px 5px,transparent 5px 8px)}
-.rolebar{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;color:var(--mute);padding:8px 0 0}
-.lnk{border:0;background:none;color:var(--or);font:700 12px Manrope,sans-serif;cursor:pointer;padding:4px 0}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px}
-.kpi{border:1px solid var(--line);border-radius:4px;padding:10px;background:var(--bg)}
-.kpi b{display:block;font-size:18px;font-weight:800;line-height:1.15;overflow-wrap:anywhere}
-.kpi span{font-size:11px;color:var(--mute)}
-.list{margin-top:14px}.list>b{display:block;font-size:12px;color:var(--or);margin-bottom:6px}
-.list div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;font-weight:600}
-.note{font-size:13px;color:var(--mute);line-height:1.5}
-.out.plan{white-space:normal}
-.note{white-space:normal;font-size:13px;line-height:1.5;color:var(--mute);margin:10px 0 4px}
-.acts{white-space:normal;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
-.hist{margin-top:10px;display:flex;flex-direction:column;gap:2px}
-.hist .lnk{text-align:left;font-weight:600;color:var(--mute)}
-.hist span{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
-.gwrap{overflow-x:auto;margin:0 -4px 12px;padding:0 4px}
-.gr{border-collapse:collapse;font-size:10px;text-align:center}
-.gr th,.gr td{border:1px solid var(--line);min-width:24px;height:22px;padding:1px 2px;font-weight:600}
-.gr th{color:var(--mute);font-weight:700;line-height:1.1}.gr th.we{color:var(--or)}
-.gr td.on{background:var(--or);color:#fff}
-.go.mini{margin-top:6px;font-size:14px;padding:11px}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--deep);color:var(--foam);font:16px/1.5 Georgia,"Times New Roman",serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#login{flex:1;display:flex;align-items:center;justify-content:center;padding:1rem}
+.card{width:100%;max-width:360px;background:var(--sea);border:1px solid var(--line);border-top:3px solid var(--brass);border-radius:6px;padding:1.5rem;font-family:system-ui,sans-serif}
+.card h1{font:600 1.4rem Georgia,serif;margin:0 0 .2rem}
+.sub{margin:0 0 1rem;color:var(--muted);font-size:14px}
+label{display:block;font-size:14px;margin-bottom:.8rem;color:var(--muted)}
+input{display:block;width:100%;margin-top:.25rem;padding:.55rem .6rem;border-radius:4px;border:1px solid var(--line);background:var(--deep);color:var(--foam);font:16px system-ui,sans-serif}
+input:focus-visible,button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+button{background:var(--brass);color:#1a1405;border:0;border-radius:4px;padding:.55rem .9rem;font:600 14px system-ui,sans-serif;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+#loginForm button{width:100%;padding:.65rem}
+.msg{min-height:1.4em;margin:.8rem 0 0;font-size:14px;color:var(--bad)}
+.small{margin:.4rem 0 0;font-size:12px;color:var(--muted)}
+#app{flex:1;display:flex;flex-direction:column;min-height:0}
+header{display:flex;gap:1rem;align-items:center;justify-content:space-between;padding:.7rem 1rem;background:var(--sea);border-bottom:2px solid var(--brass)}
+header h1{font-size:1.15rem;margin:0}
+#who{font:14px system-ui,sans-serif;color:var(--muted);margin-right:.8rem}
+main{flex:1;display:grid;grid-template-columns:1fr 300px;min-height:0}
+#map{background:#0b2231}
+aside{padding:1rem;overflow:auto;background:var(--sea);border-left:1px solid var(--line);font:14px/1.5 system-ui,sans-serif}
+aside h2{font:600 1rem Georgia,serif;margin:.2rem 0 .6rem;color:var(--brass)}
+table{width:100%;border-collapse:collapse;margin-bottom:1rem}
+td{padding:.25rem 0;border-bottom:1px solid var(--line)}
+td:last-child{text-align:right}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.tabs{display:flex;gap:.4rem}
+.tab{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.tab[aria-selected="true"]{background:var(--brass);color:#1a1405;border-color:var(--brass)}
+#charsView{flex:1;display:grid;grid-template-columns:300px 1fr;min-height:0;font-family:system-ui,sans-serif}
+#charList{padding:1rem;overflow:auto;background:var(--sea);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:.5rem}
+.ch{display:flex;gap:.7rem;align-items:center;text-align:left;width:100%;background:var(--deep);color:var(--foam);border:1px solid var(--line);padding:.5rem}
+.ch[aria-current="true"]{border-color:var(--brass)}
+.av{width:48px;height:48px;border-radius:50%;background:var(--line);object-fit:cover;flex:none}
+.ch small{display:block;color:var(--muted);font-weight:400}
+#charEdit{padding:1.2rem;overflow:auto}
+#charEdit form{max-width:460px}
+#charEdit h2{font:600 1.1rem Georgia,serif;color:var(--brass);margin:0 0 1rem}
+textarea,select{display:block;width:100%;margin-top:.25rem;padding:.55rem .6rem;border-radius:4px;border:1px solid var(--line);background:var(--deep);color:var(--foam);font:16px system-ui,sans-serif}
+textarea{min-height:110px;resize:vertical}
+.big{width:96px;height:96px;display:block;margin:.4rem 0}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem}
+.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+.good{color:var(--ok)}
+.prog{max-width:460px;margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem}
+.prog h3{font:600 .95rem Georgia,serif;margin:1.1rem 0 .4rem;color:var(--brass)}
+.prow{display:flex;align-items:center;gap:.6rem;padding:.3rem 0;border-bottom:1px solid var(--line)}
+.prow span:first-child{flex:1}
+.prow button{padding:.2rem .7rem}
+.prow b{min-width:1.6rem;text-align:center}
+.ms{color:var(--muted);font-size:14px;margin:.2rem 0}
+.ms.ok{color:var(--ok)}
+.ab{padding:.4rem 0;border-bottom:1px solid var(--line)}
+.ab small{display:block;color:var(--muted)}
+.num{width:4.2rem;display:inline-block;margin:0 .3rem}
+#scenesView{flex:1;overflow:auto;padding:1.2rem;font-family:system-ui,sans-serif}
+.scn{max-width:560px}
+.scn h2{font:600 1.1rem Georgia,serif;color:var(--brass);margin:0 0 .6rem}
+.sc{display:flex;gap:.6rem;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--line)}
+.sc span{flex:1}.sc small{display:block;color:var(--muted)}
+.scn h3{font:600 .95rem Georgia,serif;margin:1.2rem 0 .4rem;color:var(--brass)}
+.poi{font-size:22px;line-height:1;text-align:center;text-shadow:0 1px 3px #000}.poi.off{opacity:.45}
+#restBar{padding:.5rem 1rem;font:14px system-ui,sans-serif;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}#restBar.idle{background:var(--deep);color:var(--muted)}#restBar.live{background:#3a2a10;color:var(--foam);border-bottom-color:var(--brass)}#restBar button{padding:.25rem .7rem}
+.snd{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;padding:.4rem 0;border-bottom:1px solid var(--line)}.snd span{flex:1;min-width:8rem}.snd input[type=range]{width:90px;display:inline-block;margin:0;padding:0}
+.tag{color:var(--ok);font-size:13px}
+.shg{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.5rem 0}
+.shc{border:1px solid var(--line);border-radius:8px;padding:.4rem;text-align:center}.shc input{margin:.2rem auto;display:block}
+.shr{display:flex;align-items:center;gap:.5rem;padding:.15rem 0}.shr span{flex:1}.shr select{width:auto;margin:0}.shr input[type=checkbox]{width:auto;margin:0}
+.chk{min-width:3.6rem}
+#toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);max-width:92vw;white-space:pre-line;background:var(--sea);border:1px solid var(--brass);border-radius:6px;padding:.7rem 1rem;font:15px system-ui,sans-serif;z-index:2000;box-shadow:0 4px 18px #000a;cursor:pointer}
+.cb{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.4rem .5rem;border-bottom:1px solid var(--line);border-left:4px solid transparent}
+.cb[aria-current="true"]{background:rgba(201,162,75,.15);border-left-color:var(--brass)}
+.cb.out{opacity:.5}.cb.out .n{text-decoration:line-through}.cb .n{flex:1;min-width:8rem}.cb input.num{margin:0}
+#rollView{flex:1;overflow:auto;padding:1.2rem;font-family:system-ui,sans-serif}
+.rl{max-width:640px}.rl h2{font:600 1.1rem Georgia,serif;color:var(--brass);margin:0 0 .6rem}
+.rolli{padding:.45rem 0;border-bottom:1px solid var(--line);font-size:15px}.rolli small{color:var(--muted)}
+.rolli .crit{color:var(--ok)}.rolli .fail{color:var(--bad)}.tab.new{color:var(--brass)}
+.upl{display:inline-block;margin:0;background:var(--brass);color:#1a1405;border-radius:4px;padding:.55rem .9rem;font:600 14px system-ui,sans-serif;cursor:pointer}
+.upl:focus-within{outline:2px solid var(--foam)}
+button[aria-pressed="true"]{outline:2px solid var(--foam)}
+#mapTools .row select{flex:1;min-width:0;margin:0}
+.tk{width:44px;height:44px;border-radius:50%;border:3px solid var(--brass);background:var(--sea);color:var(--foam);font:700 18px/38px Georgia,serif;text-align:center;overflow:hidden;box-shadow:0 2px 6px #000a}
+.tk img{width:100%;height:100%;object-fit:cover;display:block}
+.cm{width:14px;height:14px;border-radius:50%;background:#c0392b;border:2px solid #fff;box-shadow:0 1px 4px #000a}.cm.start{width:18px;height:18px;background:var(--brass)}
+.tk.party{border-radius:8px;border-color:var(--ok)}.tk.npc{border-color:var(--bad)}
+.tkl{background:var(--deep);color:var(--foam);border:1px solid var(--line);font:600 12px system-ui,sans-serif;padding:1px 6px;box-shadow:none}
+@media(max-width:760px){#charsView{grid-template-columns:1fr;grid-template-rows:auto 1fr}#charList{border-right:0;border-bottom:1px solid var(--line);max-height:35vh}}
+@media(max-width:760px){main{grid-template-columns:1fr;grid-template-rows:60% 40%}aside{border-left:0;border-top:1px solid var(--line)}}
+
+/* ---- Дизайн v2: плакатная типографика, зерно и свечение, выезжающее меню, панели поверх карты ---- */
+:root{--sea:#17131f;--deep:#0d0b12;--brass:#ff5a36;--foam:#f4ead5;--muted:#aaa0b8;--ok:#7fd6a0;--bad:#ff8a7a;--line:#2e2542;--disp:Impact,"Arial Narrow Bold","Haettenschweiler","Arial Black",sans-serif}
+body{background:var(--deep);position:relative}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(40% 35% at 20% 25%,#7b5cff55,transparent 70%),radial-gradient(35% 35% at 80% 30%,#ff5a3655,transparent 70%),radial-gradient(40% 40% at 55% 85%,#ffb02e44,transparent 70%);animation:drift 26s ease-in-out infinite alternate}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.05;background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px)}
+@keyframes drift{to{transform:translate(6%,-5%) scale(1.15)}}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes slidein{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+#app>*:not(header):not([hidden]):not(#toast){animation:rise .45s cubic-bezier(.2,.8,.2,1)}
+h1,h2,h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:.03em;font-weight:400}
+header{background:#0d0b12e6;border-bottom:1px solid var(--line)}
+header h1{font-size:1.9rem;line-height:1;color:var(--foam)}
+.card{background:#17131fcc;border-top-color:var(--brass);box-shadow:0 20px 60px #0008}
+button{border-radius:999px;transition:transform .18s,box-shadow .18s,background .18s}
+button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 18px #ff5a3655}
+button:active:not(:disabled){transform:none}
+aside,.prog,.card{backdrop-filter:blur(6px)}
+#burger{background:var(--foam);color:#1a0904;font:400 1rem var(--disp);letter-spacing:.08em;text-transform:uppercase;margin-right:.8rem}
+.tabs{position:fixed;inset:0 auto 0 0;width:min(360px,88vw);flex-direction:column;gap:.1rem;padding:5rem 1.4rem 1.4rem;background:var(--sea);border-right:2px solid var(--brass);z-index:1100;transform:translateX(-105%);transition:transform .38s cubic-bezier(.2,.8,.2,1);overflow:auto}
+.tabs.open{transform:none;box-shadow:20px 0 60px #000a}
+.tab,.tab[aria-selected="true"]{background:transparent;border:0;border-radius:0;box-shadow:none;text-align:left;color:var(--foam);font:400 2.1rem/1.15 var(--disp);text-transform:uppercase;letter-spacing:.02em;transition:color .2s,padding .2s}
+.tab:hover:not(:disabled){transform:none;box-shadow:none;color:var(--brass);padding-left:.7rem}
+.tab[aria-selected="true"]{color:var(--brass)}.tab.new{color:var(--ok)}
+body:not(:has(#app:not([hidden]))) .tabs{display:none}
+#scrim{position:fixed;inset:0;background:#000a;z-index:1050;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim.on{opacity:1;pointer-events:auto}
+#rollView,#combatView{position:fixed;top:0;right:0;bottom:0;width:min(470px,100%);z-index:900;background:var(--sea);border-left:2px solid var(--brass);overflow:auto;padding:1rem;animation:slidein .3s;box-shadow:-20px 0 60px #000a}
+#rollView .x,#combatView .x{float:right;background:var(--foam)}
+#dock{position:fixed;left:1rem;bottom:1.2rem;z-index:800;display:none;gap:.6rem}
+body:has(#mapView:not([hidden])) #dock{display:flex}
+#dock button{font:400 1.3rem var(--disp);letter-spacing:.06em;text-transform:uppercase;padding:.6rem 1.3rem;box-shadow:0 6px 20px #000a}
+#tables,#mapView aside>h2:first-child{display:none}
+#mapView{position:relative;transition:grid-template-columns .35s}
+#mapView.nopanel{grid-template-columns:1fr 0}
+#mapView.nopanel aside{padding:0;overflow:hidden;border:0}
+#asideBtn{position:absolute;top:.7rem;right:calc(300px + .7rem);z-index:800;background:var(--foam);color:#1a0904}
+#mapView.nopanel #asideBtn{right:.7rem}
+#rulesView .scn{max-width:none;display:grid;grid-template-columns:minmax(260px,340px) 1fr;column-gap:1.6rem;align-content:start}
+#rulesView .scn>*{grid-column:1}
+#rulesView #glView,#rulesView #glForm{grid-column:2;grid-row:1/span 7;align-self:start;padding:1.2rem;border:1px solid var(--line);border-radius:10px;background:#0d0b1288}
+#rulesView #glList{max-height:62vh;overflow:auto}
+#rulesView #glView h2,#rulesView #glView h3{font-size:2rem;line-height:1.1;margin:.2rem 0 .8rem}
+.shc{background:#0d0b1288;border-radius:14px;transition:transform .2s,border-color .2s}.shc:hover{transform:translateY(-3px);border-color:var(--brass)}
+.shc input{font:400 1.5rem var(--disp);text-align:center}.shc .chk{font:400 1.4rem var(--disp)}
+@media(max-width:760px){#rulesView .scn{display:block}#asideBtn,#mapView.nopanel #asideBtn{right:.7rem}#dock{bottom:.8rem}}
+.lss{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.2rem;align-items:start}
+.shh{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem}.shh h2{font-size:2.2rem;line-height:1;margin:0 .6rem 0 0}.shh input{width:9rem;margin:0}
+.shcol .shg{grid-template-columns:repeat(3,1fr)}.shcol .shc input{font-size:1.3rem}
+.shtabs{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.6rem}.shtabs button{background:transparent;color:var(--foam);border:1px solid var(--line)}.shtabs button[aria-pressed="true"]{background:var(--brass);color:#1a0904}
+.shr input.num{width:4.5rem}
+@media(prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
+
+/* ---- Дизайн v3: средневековая пиратская карта (морская вода, пергамент, латунь, сургуч) ---- */
+:root{--sea:#0f2b37;--deep:#08181f;--brass:#d9a441;--brass2:#8a6a2c;--foam:#f1e4c3;--muted:#a9b9b3;--ok:#8fd6a0;--bad:#f08a78;--line:#2a4b55;--wax:#9c2f24;--ink:#2b1d0e;--paper:#f0e2bd;--disp:"Cormorant SC","Cormorant Garamond",Georgia,"Times New Roman",serif;--body:Alegreya,Georgia,"Times New Roman",serif}
+*{scrollbar-color:#8a6a2c #08181f}
+::selection{background:#d9a44166}
+body{font-family:var(--body);background:linear-gradient(180deg,#0b2733,#081a22 55%,#06141a)}
+body::before{background:radial-gradient(40% 35% at 18% 22%,#1f7a8a55,transparent 70%),radial-gradient(35% 35% at 82% 28%,#d9a44133,transparent 70%),radial-gradient(45% 40% at 55% 88%,#0f5f7066,transparent 70%)}
+body::after{z-index:2500;opacity:1;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .75 0 0 0 0 .6 0 0 0 0 .38 0 0 0 .13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");box-shadow:inset 0 0 90px 8px #7a552a66,inset 0 0 0 3px #8a6a2c44}
+aside,#charsView,#scenesView,#rollView,#restBar,#toast,.card,.tkl{font-family:var(--body)}
+aside{font-size:15px;background:linear-gradient(180deg,#0f2d39f2,#0b222cf2);border-left:3px double var(--brass2)}
+h1,h2,h3{font-family:var(--disp);font-weight:700;letter-spacing:.05em}
+header{background:linear-gradient(180deg,#0e2e3b,#0a2029);border-bottom:3px double var(--brass2)}
+header h1{font-size:1.7rem;letter-spacing:.07em;color:var(--foam);display:flex;align-items:center;gap:.5rem}
+header h1::before,#login h1::before{content:"";flex:none;width:1.3em;height:1.3em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg fill='none' stroke='%23d9a441' stroke-width='3'%3E%3Ccircle r='42'/%3E%3Ccircle r='34' stroke-width='1.5'/%3E%3C/g%3E%3Cpath d='M0-48L8-8L48 0L8 8L0 48L-8 8L-48 0L-8-8Z' fill='%23d9a441'/%3E%3Cpath d='M0-30L5-5L30 0L5 5L0 30L-5 5L-30 0L-5-5Z' fill='%230a1f29'/%3E%3Ccircle r='4' fill='%23d9a441'/%3E%3C/svg%3E") center/contain no-repeat}
+aside h2::after,.scn h2::after,.rl h2::after,#charEdit h2::after{content:"";display:block;height:5px;margin-top:.3rem;background:repeating-linear-gradient(135deg,#b79a68 0 3px,#6b5330 3px 6px);border-radius:3px;opacity:.65}
+button{font-family:var(--body);font-size:15px;font-weight:700;border-radius:6px;border:1px solid var(--brass2);background:linear-gradient(180deg,#e8bd5e,#c58f2e);color:#1d1406;box-shadow:inset 0 1px 0 #fff6,0 2px 0 #5d4210}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:inset 0 1px 0 #fff6,0 5px 14px #d9a44155}
+.danger{box-shadow:none}.danger:hover:not(:disabled){box-shadow:none}
+.tab,.tab[aria-selected="true"]{font:700 1.95rem/1.2 var(--disp);letter-spacing:.04em}
+.tabs{background:linear-gradient(180deg,#0f2d39,#091d26);border-right:3px double var(--brass2)}
+.tabs::after{content:"";flex:none;margin:auto auto 0;width:150px;height:150px;opacity:.35;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg fill='none' stroke='%23d9a441' stroke-width='3'%3E%3Ccircle r='42'/%3E%3Ccircle r='34' stroke-width='1.5'/%3E%3C/g%3E%3Cpath d='M0-48L8-8L48 0L8 8L0 48L-8 8L-48 0L-8-8Z' fill='%23d9a441'/%3E%3Cpath d='M0-30L5-5L30 0L5 5L0 30L-5 5L-30 0L-5-5Z' fill='%230a1f29'/%3E%3Ccircle r='4' fill='%23d9a441'/%3E%3C/svg%3E") center/contain no-repeat}
+#burger{background:var(--paper);border:1px solid var(--brass2);font-family:var(--disp);font-weight:700;font-size:1.05rem}
+#login{background:radial-gradient(60% 50% at 50% 40%,#12404f66,transparent 75%)}
+#login::after{content:"";position:fixed;left:50%;bottom:-18px;width:min(320px,70vw);aspect-ratio:6/5;transform:translateX(-50%);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 100'%3E%3Cg fill='%23d9a441'%3E%3Cpath d='M8 72L112 72Q104 92 70 94L32 94Q14 90 8 72Z'/%3E%3Cpath d='M59 6H61V72H59Z'/%3E%3Cpath d='M60 12Q88 26 84 50L60 54Z'/%3E%3Cpath d='M60 12Q32 26 36 50L60 54Z'/%3E%3Cpath d='M60 58Q92 66 88 70L60 70Z'/%3E%3Cpath d='M60 58Q28 66 32 70L60 70Z'/%3E%3Cpath d='M61 6L80 11L61 16Z'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;opacity:.28;pointer-events:none;animation:bob 7s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateX(-50%) rotate(-2deg) translateY(0)}50%{transform:translateX(-50%) rotate(2deg) translateY(-8px)}}
+#login .card{position:relative;z-index:1;background:linear-gradient(160deg,#f3e6c2,#e4cf9f);color:var(--ink);border:2px solid #7a5a2a;border-radius:4px;backdrop-filter:none;box-shadow:0 0 0 4px #e4cf9f33,0 18px 50px #000a,inset 0 0 40px #b68a3c66}
+#login .card h1{color:#4a2410;font-size:2rem;letter-spacing:.06em;margin:0 0 .2rem;display:flex;align-items:center;gap:.6rem}
+#login .sub,#login .small{color:#6b4a24}#login label{color:#5b4020}
+#login input{background:#f8edd0;color:var(--ink);border-color:#b79a68}
+#login .msg{color:#8a2a1c}
+#login #loginBtn{background:linear-gradient(180deg,#b13a2c,#8a261b);color:#f6e7c4;border:1px solid #5b150e;box-shadow:inset 0 1px 0 #fff3,0 2px 0 #4a120c}
+#map::after{content:"";position:absolute;inset:0;z-index:900;pointer-events:none;box-shadow:inset 0 0 0 4px #8a6a2c,inset 0 0 80px #000b}
+.leaflet-bar a{background:var(--paper);color:var(--ink);border-bottom:1px solid #b79a68}.leaflet-bar a:hover{background:#e4cf9f}
+.tkl{background:var(--paper);color:var(--ink);border:1px solid var(--brass2);font:700 12px var(--body)}
+.leaflet-tooltip-bottom:before{border-bottom-color:var(--brass2)}
+#toast{background:var(--paper);color:var(--ink);border-color:var(--brass2)}
+@media(prefers-reduced-motion:reduce){*::after{animation:none!important}}
+
+/* ---- Эргономика: кубики, список персонажей, метки на кнопках карты ---- */
+.newch{background:transparent;color:var(--brass);border:1px dashed var(--brass2);box-shadow:none;width:100%}
+.newch[aria-current="true"]{border-style:solid;background:#d9a44122}
+.newch:hover:not(:disabled){box-shadow:none;background:#d9a44122}
+#charEmpty{padding:1rem;font-size:1.05rem}
+.dice{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin:.8rem 0}
+.dice button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;padding:.5rem .2rem;background:#12303c;color:var(--foam);border:1px solid var(--line);box-shadow:none;font-weight:700;line-height:1.1}
+.dice button small{font-size:12px;color:var(--muted)}
+.dice button:hover:not(:disabled){border-color:var(--brass);color:var(--brass);box-shadow:none}
+.dice #rModeBtn{font-size:13px;text-align:center}.dice #rModeBtn[aria-pressed="true"]{border-color:var(--brass);color:var(--brass)}
+.fmf{display:flex;gap:.5rem;margin:.4rem 0}.fmf input{margin:0;flex:1}
+#dock button.new{outline:3px solid var(--ok);outline-offset:2px}
+
+/* ---- Лист персонажа (по эталону LongStoryShort, тема пиратской карты) ---- */
+#sheet{max-width:1700px;margin-top:0;padding:0;background:transparent;border:0;box-shadow:none}
+.sxh{display:flex;flex-wrap:wrap;align-items:center;gap:1rem 1.5rem;padding:1rem 1.2rem;background:linear-gradient(180deg,#123747,#0d2a37);border:1px solid var(--brass2);border-radius:10px;box-shadow:inset 0 0 0 3px #0a1f29,0 8px 24px #0008}
+.sxp{flex:none;width:84px;height:84px;border-radius:12px;border:2px solid var(--brass);background:#0a1f29;overflow:hidden;display:grid;place-items:center;font:700 2.2rem var(--disp);color:var(--brass)}
+.sxp img{width:100%;height:100%;object-fit:cover}
+.sxid{flex:1 1 300px;min-width:0}
+#charEdit .sxid h2{margin:0;font-size:2.1rem;line-height:1.1;color:var(--foam)}
+#charEdit .sxid h2::after{display:none}
+.sxmeta{display:flex;flex-wrap:wrap;gap:.4rem .6rem;align-items:center;margin-top:.4rem}
+.sxmeta input{width:9.5rem;margin:0;padding:.3rem .5rem;font-size:15px}
+.sxcls{color:var(--brass);font:700 1.05rem var(--disp);letter-spacing:.07em;text-transform:uppercase}
+.sxlv{display:inline-flex;align-items:center;gap:.4rem;padding:.1rem .7rem;border:1px solid var(--brass2);border-radius:999px;color:var(--brass);font-weight:700}
+.sxlv input{width:3.4rem!important;margin:0}
+.sxedit{margin-top:.5rem;padding:.25rem .7rem;font-size:13px;background:transparent;color:var(--muted);border:1px dashed var(--line);box-shadow:none}
+.sxst,.sxac,.sxinsp{display:flex;flex-direction:column;align-items:center;text-align:center;gap:.15rem}
+.sxst small,.sxac small,.sxbox small,.sxchip span{font:700 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sxst b,.sxst input,.sxbox input.num,.sxac input{font:700 1.8rem/1 var(--disp);color:var(--foam)}
+#sheet input.num{width:4.4rem;text-align:center;margin:0}
+.sxst input.num,.sxac input.num{background:transparent;border:0;width:4.4rem}
+.sxac{position:relative;width:76px;height:86px;color:var(--brass);justify-content:center}
+.sxac svg{position:absolute;inset:0;width:100%;height:100%}
+.sxac input{position:relative;z-index:1;margin-top:.5rem;width:3.2rem!important}
+.sxac small{position:relative;z-index:1}
+.sxhpn{display:flex;align-items:center;gap:.2rem;border:1px solid var(--brass2);border-radius:8px;padding:.3rem .5rem;background:#0a1f29}
+.sxhpn input.big{width:4rem!important;font-size:1.6rem}
+.sxinsp{width:52px;height:52px;border-radius:50%;justify-content:center;background:#0a1f29;color:var(--muted);border:2px solid var(--line);box-shadow:none;font-size:1.6rem}
+.sxinsp[aria-pressed="true"]{color:#1d1406;background:var(--brass);border-color:var(--brass2)}
+.sxout{margin:.8rem 0 0;padding:.5rem .8rem;background:#0b2230;border-left:3px solid var(--brass);border-radius:4px;min-height:2.3em}
+.sxmain{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:1.4rem;margin-top:1.2rem;align-items:start}
+.sxabil{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem}
+@media(max-width:1180px){.sxmain{grid-template-columns:1fr}}
+@media(max-width:620px){.sxabil{grid-template-columns:1fr}}
+.sxg{margin-bottom:1.2rem}
+.sxgh{display:flex;align-items:center;gap:.7rem}
+.sxgh h3{margin:0;font-size:1.6rem;letter-spacing:.06em;color:var(--foam)}
+.sxgh hr{flex:1;border:0;border-top:1px solid var(--line);margin:0}
+#sheet .sxscore{width:3.6rem;font:700 1.7rem var(--disp);background:transparent;border:0;color:var(--foam);text-align:right}
+.sxchips{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0}
+.sxchip{display:flex;align-items:center;gap:.4rem;background:#0f2d3b;border:1px solid var(--line);border-radius:8px;padding:.25rem .4rem .25rem .6rem}
+.sxchip input[type=checkbox]{width:auto;margin:0}
+.sxv{min-width:3.2rem;padding:.3rem .6rem;font:700 1.1rem var(--disp);background:#0a1f29;color:var(--foam);border:1px solid var(--brass2);box-shadow:none;border-radius:6px}
+#sheet .sxv:hover:not(:disabled){background:#d9a44122;color:var(--brass);box-shadow:none;transform:none}
+.sxsk{display:flex;align-items:center;gap:.5rem;background:#12303c;border:1px solid var(--line);border-radius:999px;padding:.15rem .3rem .15rem .5rem;margin:.3rem 0;font:700 .92rem var(--disp);letter-spacing:.04em;text-transform:uppercase}
+.sxsk span{flex:1}
+.sxdot{background:transparent;color:var(--brass);border:0;box-shadow:none;padding:0 .2rem;font-size:1.1rem}
+#sheet .sxdot:hover:not(:disabled){box-shadow:none;transform:none}
+.sxps{margin:.2rem 0 1rem;color:var(--muted);font-size:14px}
+.sxprof h4{margin:.8rem 0 .4rem;font:700 .95rem var(--disp);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sxpills{display:flex;flex-wrap:wrap;gap:.4rem}
+.sxpill{background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:999px;box-shadow:none;padding:.2rem .8rem}
+.sxpill[aria-pressed="true"]{background:var(--brass);color:#1d1406;border-color:var(--brass2)}
+.sxtop{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.sxbox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;background:#0f2d3b;border:1px solid var(--line);border-radius:8px;padding:.5rem .4rem}
+.sxbox input{margin:0;text-align:center}
+.sxini{display:flex;align-items:center;gap:.3rem}.sxini .mini{width:3.2rem!important;font-size:1rem}
+.sxhealth{margin:1rem 0;padding:.8rem;border:1px solid var(--line);border-radius:8px;background:#0b2230;display:grid;gap:.6rem}
+.sxline{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.sxline input{margin:0}.sxline input[type=checkbox]{width:auto}
+.sxtabs{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem 1rem;border-bottom:1px solid var(--line);margin:1rem 0 .8rem}
+.sxtabs button{background:transparent;color:var(--muted);border:0;border-bottom:2px solid transparent;border-radius:0;box-shadow:none;padding:.3rem 0;font:700 1.05rem var(--disp);letter-spacing:.05em;text-transform:uppercase}
+.sxtabs button[aria-pressed="true"]{color:var(--brass);border-bottom-color:var(--brass)}
+#sheet .sxtabs button:hover:not(:disabled){box-shadow:none;transform:none;color:var(--brass)}
+.sxtabs .sxmode{margin:0 0 0 auto;width:auto}
+.sxrow{display:grid;grid-template-columns:minmax(0,1fr) 4.4rem 6.2rem auto;gap:.4rem;align-items:center;margin:.35rem 0}
+.sxrow input{margin:0}.sxrh span{font:700 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sxbtns{display:flex;gap:.3rem}
+.sxslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(5rem,1fr));gap:.4rem;margin:.5rem 0}
+
+/* ---- Safari: сплошной фон на корне страницы, без размытия и анимированного слоя ---- */
+html{background-color:#06141a;background-image:radial-gradient(40% 35% at 18% 22%,#1f7a8a55,transparent 70%),radial-gradient(35% 35% at 82% 28%,#d9a44133,transparent 70%),radial-gradient(45% 40% at 55% 88%,#0f5f7066,transparent 70%),linear-gradient(180deg,#0b2733,#081a22 55%,#06141a);background-repeat:no-repeat;background-size:100% 100%}
+body{background:transparent}
+body::before{display:none}
+aside,.prog,.card{backdrop-filter:none;-webkit-backdrop-filter:none}
+
+/* ---- Лист: защита от наезжания блоков ---- */
+.sxabil>.sxcol,.sxmain>*,.sxright>*{min-width:0}
+.sxsk span{min-width:0;overflow-wrap:anywhere;line-height:1.15}
+.sxchip{flex-wrap:wrap}
+.sxgh h3{font-size:1.45rem}
+#charEdit{padding:1.2rem 1.6rem}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&family=Cormorant+SC:wght@600;700&display=swap">
 </head>
 <body>
-<div class="app">
-  <div class="brand"><svg viewBox="0 0 32 32" fill="none" stroke="#F26A0F" stroke-width="4.5" stroke-linecap="round"><path d="M16 3v26M4.7 9.5l22.6 13M4.7 22.5l22.6-13"/></svg><div><b>Максимедиа</b><span>Рекламное агентство в ТВ-размещении</span></div><i>Нижневартовск<br>Ваш бренд в каждом доме</i></div>
-  <div id="rolebar" class="rolebar"></div>
-  <main id="pages"></main>
-  <div class="foot">Планируем. Размещаем. Растим ваш бренд.</div>
-</div>
-<nav id="nav"></nav>
+<section id="login">
+  <form id="loginForm" class="card">
+    <h1>ДнД-проект</h1>
+    <p class="sub">Вход для мастера и игроков</p>
+    <label>Почта<input id="email" type="email" autocomplete="username" required></label>
+    <label>Пароль<input id="pass" type="password" autocomplete="current-password" required></label>
+    <button id="loginBtn" type="submit">Войти</button>
+    <p id="loginMsg" class="msg" role="alert"></p>
+    <p id="guestCheck" class="small"></p>
+  </form>
+</section>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<section id="app" hidden>
+  <header>
+    <h1>ДнД-проект</h1>
+    <div class="tabs" role="tablist"><button class="tab" id="tabChars" role="tab" type="button">Персонажи</button><button class="tab" id="tabScenes" role="tab" type="button">Сцены</button><button class="tab" id="tabMap" role="tab" type="button">Карта</button><button class="tab" id="tabSounds" role="tab" type="button" hidden>Звуки</button><button class="tab" id="tabRules" role="tab" type="button" hidden>Правила</button><button class="tab" id="tabImp" role="tab" type="button" hidden>Импровизация</button><button class="tab" id="tabCombat" role="tab" type="button" hidden>Бой</button><button class="tab" id="tabRolls" role="tab" type="button" hidden>Броски</button><button class="tab" id="tabJournal" role="tab" type="button">Журнал</button></div>
+    <div><button id="audioBtn" type="button" aria-pressed="false">Включить звук</button><input id="vol" type="range" min="0" max="100" value="80" aria-label="Моя громкость" style="display:inline-block;width:90px;margin:0 .6rem;padding:0;vertical-align:middle"><span id="who"></span><button id="logout" type="button">Выйти</button></div>
+  </header>
+  <div id="restBar" hidden></div>
+  <main id="mapView" hidden>
+    <div id="map" aria-label="Карта мира"></div>
+    <aside>
+      <h2>Таблицы базы</h2>
+      <table id="tables"></table>
+      <h2>Сцена</h2>
+      <p id="mapInfo" class="ms"></p>
+      <div id="mapTools" hidden>
+        <div class="row"><select id="tokChar" aria-label="Персонаж"></select><button id="addTok" type="button">Поставить персонажа</button></div>
+        <div class="row"><button id="addParty" type="button">Поставить партию</button><button id="fxBtn" type="button" aria-pressed="false">Огненный шар</button><button id="fxClear" class="danger" type="button">Убрать следы</button></div>
+        <div class="row"><button id="toWorld" type="button" hidden>К карте мира</button></div>
+        <div class="row"><button id="fogBtn" type="button" aria-pressed="false">Туман</button><button id="fogOpen" type="button" aria-pressed="false">Открыть зону</button><select id="fogSize" aria-label="Размер зоны"><option value="s">Малая</option><option value="m" selected>Средняя</option><option value="l">Большая</option></select><button id="fogClose" type="button" aria-pressed="false">Закрыть зону</button><button id="fogReset" class="danger" type="button">Скрыть всё</button></div>
+        <div class="row"><button id="poBtn" type="button" aria-pressed="false">Поставить точку</button><select id="poKind" aria-label="Тип точки"></select></div>
+        <div class="row"><button id="zoBtn" type="button" aria-pressed="false">Зона внимания</button><input id="zoDc" type="number" min="1" max="30" value="13" aria-label="Сложность зоны" title="Сложность (СЛ)" style="width:4.5rem;margin:0"><select id="zoSize" aria-label="Размер зоны"><option value="s">Малая</option><option value="m" selected>Средняя</option><option value="l">Большая</option></select></div>
+        <div class="row"><input id="zoNote" maxlength="500" placeholder="Что заметят (увидят только заметившие)" aria-label="Что заметят" style="flex:1;margin:0"></div>
+        <div class="row"><label style="flex:1">Сцена лагеря<select id="campSel"></select></label><label>Согласие, %<input id="restPct" type="number" min="1" max="100" value="100" style="width:5rem"></label></div>
+        <div class="row"><button id="rmTok" type="button" aria-pressed="false">Убрать токен</button><button id="rmAll" class="danger" type="button">Убрать всех</button></div>
+        <div class="row"><button id="backupBtn" type="button">Скачать копию данных</button></div>
+      <div id="board" class="row" aria-label="Звуки"></div>
+      <p class="small">Токены двигаются перетаскиванием. Огненный шар: включите кнопку и нажмите на карту.</p>
+      </div>
+      <p id="mapMsg" class="msg" role="status"></p>
+      <div id="zoLogBox" hidden><h2>Проверки внимания</h2><div id="zoLog"></div></div>
+      <div id="zoSeenBox" hidden><h2>Замеченное</h2><div id="zoSeen"></div></div>
+    </aside>
+  </main>
+  <div id="toast" role="status" hidden></div>
+  <div id="combatView" hidden>
+    <div class="scn">
+      <h2>Бой</h2>
+      <p id="cbState" class="ms"></p>
+      <div id="cbMaster" hidden>
+        <div class="row" id="cbMain"></div>
+        <div class="row" id="cbNpc" hidden>
+          <input id="cbName" maxlength="50" placeholder="Противник, например Скелет" aria-label="Название противника" style="flex:1;min-width:9rem;margin:0">
+          <input id="cbCnt" type="number" min="1" max="10" value="1" aria-label="Сколько" title="Сколько" style="width:4.5rem;margin:0">
+          <input id="cbBon" type="number" min="-10" max="20" value="0" aria-label="Бонус инициативы" title="Бонус инициативы" style="width:4.5rem;margin:0">
+          <label style="display:flex;align-items:center;gap:.4rem"><input id="cbHid" type="checkbox" style="width:auto;margin:0">скрыты от игроков</label>
+          <button id="cbAdd" type="button">Добавить противников</button>
+        </div>
+      </div>
+      <div id="cbList"></div>
+      <p id="cbMsg" class="msg" role="status"></p>
+    </div>
+  </div>
+  <div id="rollView" hidden>
+    <div class="rl">
+      <h2>Броски</h2>
+      <div class="row"><select id="rC" aria-label="От лица персонажа" style="width:auto;margin:0;flex:1"></select><label id="rHidL" hidden style="display:flex;align-items:center;gap:.4rem"><input id="rH" type="checkbox" style="width:auto;margin:0">Скрытый бросок</label></div>
+      <div id="dice" class="dice" role="group" aria-label="Кубики"></div>
+      <form id="fmForm" class="fmf"><input id="fm" maxlength="40" placeholder="2d20kh1" autocomplete="off" aria-label="Формула броска"><button type="submit">Бросить</button></form>
+      <p id="rollMsg" class="msg" role="status"></p>
+      <p class="ms">Нажмите на кубик, чтобы бросить. Формула: 2d6+3, d20, 2d20kh1 (преимущество), 2d20kl1 (помеха). Результат считает сервер.</p>
+      <div id="rollLog"></div>
+      <div class="row"><button id="rClear" class="danger" type="button" hidden>Очистить журнал</button></div>
+    </div>
+  </div>
+  <div id="impView" hidden>
+    <div class="scn">
+      <h2>Импровизация</h2>
+      <h3>Кубики</h3>
+      <div class="row">
+        <input id="dN" type="number" min="1" max="20" value="1" aria-label="Сколько кубиков" style="width:4.5rem;margin:0">
+        <select id="dS" aria-label="Кубик" style="width:auto;margin:0"><option value="4">d4</option><option value="6">d6</option><option value="8">d8</option><option value="10">d10</option><option value="12">d12</option><option value="20" selected>d20</option><option value="100">d100</option></select>
+        <input id="dM" type="number" value="0" aria-label="Модификатор" style="width:5rem;margin:0">
+        <select id="dA" aria-label="Режим" style="width:auto;margin:0"><option value="">Обычный</option><option value="adv">Преимущество</option><option value="dis">Помеха</option></select>
+        <button id="dRoll" type="button">Бросить</button>
+      </div>
+      <div id="dOut" role="status" style="font-size:1.5rem;margin:.6rem 0">&nbsp;</div>
+      <div id="dLog" class="ms"></div>
+      <h3>Таблицы случайного выбора</h3>
+      <label>Таблица<select id="rtSel"></select></label>
+      <div class="row"><button id="rtRoll" type="button">Бросить по таблице</button><button id="rtEdit" type="button">Править</button><button id="rtNew" type="button">Новая таблица</button></div>
+      <div id="rtOut" role="status" style="margin:.6rem 0;font-size:1.1rem"></div>
+      <div id="rtLog" class="ms"></div>
+      <form id="rtForm" hidden>
+        <label>Название<input id="rtName" maxlength="80" required></label>
+        <label>Категория<input id="rtCat" maxlength="60" required></label>
+        <label>Варианты (один на строку)<textarea id="rtEntries" style="min-height:200px"></textarea></label>
+        <div class="row"><button type="submit">Сохранить</button><button id="rtCancel" type="button">Отмена</button><button id="rtDel" class="danger" type="button" hidden>Удалить таблицу</button></div>
+      </form>
+      <p id="impMsg" class="msg" role="status"></p>
+    </div>
+  </div>
+  <div id="journalView" hidden>
+    <div class="scn">
+      <h2>Журнал</h2>
+      <h3>В прошлой серии</h3>
+      <div id="jSess"></div>
+      <form id="sessForm" hidden>
+        <label>Номер сессии<input id="sNo" type="number" min="1" required></label>
+        <label>Название<input id="sTitle" maxlength="120"></label>
+        <label>Что было<textarea id="sText" required></textarea></label>
+        <button type="submit">Записать</button>
+      </form>
+      <h3>Задания</h3>
+      <div id="jQuests"></div>
+      <form id="qForm" hidden>
+        <label>Название<input id="qTitle" maxlength="120" required></label>
+        <label>Описание<textarea id="qBody"></textarea></label>
+        <label>Тип<select id="qKind"><option value="story">Сюжетное</option><option value="side">Дополнительное</option></select></label>
+        <label><input id="qVis" type="checkbox" style="display:inline;width:auto;margin-right:.4rem">Показать игрокам сразу</label>
+        <button type="submit">Добавить задание</button>
+      </form>
+      <h3>Мои заметки (видите только вы)</h3>
+      <textarea id="jNotes" maxlength="20000" style="min-height:140px"></textarea>
+      <div class="row"><button id="jNotesSave" type="button">Сохранить заметки</button></div>
+      <p id="jMsg" class="msg" role="status"></p>
+    </div>
+  </div>
+  <div id="rulesView" hidden>
+    <div class="scn">
+      <h2 id="glH">Правила</h2>
+      <label>Поиск<input id="glQ" type="search" placeholder="Например: преимущество, укрытие, огнестрел" autocomplete="off"></label>
+      <label>Категория<select id="glCat"></select></label>
+      <div class="row"><button id="glNew" type="button">Новая статья</button></div>
+      <div id="glList"></div>
+      <div id="glView" hidden></div>
+      <form id="glForm" hidden>
+        <label>Название<input id="glTitle" maxlength="120" required></label>
+        <label>Категория<input id="glCategory" list="glCats" maxlength="60" required></label><datalist id="glCats"></datalist>
+        <label>Теги и синонимы через запятую<input id="glTags" maxlength="300"></label>
+        <label>Источник<input id="glSource" maxlength="120"></label>
+        <label>Текст<textarea id="glBody" style="min-height:180px"></textarea></label>
+        <label style="display:flex;align-items:center;gap:.4rem"><input id="glPub" type="checkbox" style="width:auto;margin:0">Показывать игрокам (вкладка «Как играть»)</label>
+        <div class="row"><button type="submit">Сохранить</button><button id="glCancel" type="button">Отмена</button></div>
+      </form>
+      <details>
+        <summary>Вставить сразу много статей</summary>
+        <p class="small">Каждая статья начинается со строки «# Название | Категория | теги через запятую», дальше идёт её текст.</p>
+        <textarea id="glImp" style="min-height:140px"></textarea>
+        <div class="row"><button id="glImport" type="button">Добавить из текста</button></div>
+      </details>
+      <p id="glMsg" class="msg" role="status"></p>
+    </div>
+  </div>
+  <div id="soundsView" hidden>
+    <div class="scn">
+      <h2>Звуки</h2>
+      <form id="soundForm">
+        <label>Название<input id="snName" maxlength="60" required></label>
+        <label>Тип
+          <select id="snKind"><option value="oneshot">Разовый (выстрел, каст)</option><option value="loop">Фоновый (толпа, лес)</option></select>
+        </label>
+        <label>Файл (mp3, ogg, wav; до 5 МБ)<input id="snFile" type="file" accept="audio/*" required></label>
+        <button type="submit">Загрузить</button>
+      </form>
+      <label>Звук огненного шара<select id="fxSound"></select></label>
+      <div id="soundList"></div>
+      <p id="snMsg" class="msg" role="status"></p>
+    </div>
+  </div>
+  <div id="scenesView" hidden>
+    <div class="scn">
+      <h2>Сцены</h2>
+      <p id="curScene" class="ms"></p>
+      <form id="sceneForm" hidden>
+        <label>Название сцены<input id="sName" maxlength="80" required></label>
+        <label>Тип
+          <select id="sKind"><option value="location">Локация</option><option value="generated">Сгенерированная</option><option value="route_segment">Сегмент маршрута</option><option value="world">Мир</option></select>
+        </label>
+        <button type="submit">Создать сцену</button>
+      </form>
+      <div id="sceneList"></div>
+      <p id="sceneMsg" class="msg" role="status"></p>
+    </div>
+  </div>
+  <div id="charsView">
+    <div id="charList"></div>
+    <div id="charEdit">
+      <p id="charEmpty" class="ms" hidden></p>
+      <form id="charForm" hidden>
+        <h2 id="charTitle">Новый персонаж</h2>
+        <label>Имя<input id="cName" maxlength="40" required></label>
+        <label>Класс
+          <select id="cClass"><option value="warrior">Воин</option><option value="wizard">Волшебник</option><option value="rogue">Плут</option><option value="cleric_druid">Жрец или друид</option></select>
+        </label>
+        <label>Заметки<textarea id="cNotes" maxlength="2000"></textarea></label>
+        <label>Фото (будет сжато до 512 пикселей)<input id="cPhoto" type="file" accept="image/jpeg,image/png,image/webp"></label>
+        <img id="cPreview" class="av big" alt="" hidden>
+        <div class="row"><button id="saveBtn" type="submit">Сохранить</button><button id="cancelNew" type="button" hidden>Отмена</button><button id="delBtn" class="danger" type="button" hidden>Удалить</button></div>
+        </form>
+      <p id="charMsg" class="msg" role="status"></p>
+      <div id="sheet" class="prog" hidden></div>
+      <div id="progress" class="prog" hidden></div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
-// ===== НАСТРОЙКИ =====
-const CFG = {
-  makeWebhook: 'https://hook.eu2.make.com/l74bbei7qvrbaerivafqr96441t7axsy'   // URL вебхука Make. Пусто = демо-режим без сервера
+const SUPABASE_URL = "https://brotwfmicsbvxubpzxba.supabase.co";
+const SUPABASE_KEY = "sb_publishable_W_HXsPhO2fDL5-oMzdsiuA_PVT-cDbv"; // публичный ключ, данные защищены правилами базы
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const names = ["profiles","characters","character_progress","map_points","tokens","effects","fog_zones","settings","session_log","scenes","rolls","combats","combatants","perception_zones","zone_notices"];
+
+// ---- Карта сцены: фон, токены, эффекты. Координаты внутри сцены: пиксели изображения сцены, начало слева сверху.
+let zoL = [], zones = [], zoMode = false;
+let map = null, bg = null, scn = null, dims = null, toks = [], tokM = {}, fxL = [], effs = [], fxMode = false, dragging = false, mapGen = 0, rmMode = false, cityM = [], fogOn = false, fogZ = [], fogCv = null, foMode = false, fcMode = false, poMode = false, poiM = {};
+const mmsg = (t, ok) => { $("mapMsg").textContent = t; $("mapMsg").className = "msg" + (ok ? " good" : ""); };
+const ll = (x, y) => [dims.h - y, x];
+
+function clearScene() {
+  if (bg) { bg.remove(); bg = null; }
+  Object.values(tokM).forEach(m => m.remove()); tokM = {};
+  cityM.forEach(m => m.remove()); cityM = []; fogOn = false; fogZ = []; drawFog(); Object.values(poiM).forEach(m => m.remove()); poiM = {};
+  fxL.forEach(l => l.remove()); fxL = []; zoL.forEach(l => l.remove()); zoL = []; zones = []; toks = []; effs = []; scn = null; dims = null;
+}
+
+async function openScene() {
+  const gen = ++mapGen;
+  const cur = scenes.find(s => s.is_current);
+  $("mapTools").hidden = !me.master;
+  $("toWorld").hidden = !(me.master && cur && cur.kind !== "world");
+  if (!map) {
+    map = L.map("map", {crs: L.CRS.Simple, minZoom: -6, maxZoom: 2, zoomSnap: .25, attributionControl: false});
+    map.on("click", onMapClick);
+  }
+  setTimeout(() => map.invalidateSize(), 0);
+  if (me.master) fillTokChars();
+  if (!cur) { clearScene(); $("mapInfo").textContent = me.master ? "Ни одна сцена не открыта для партии." : "Мастер ещё не открыл сцену."; mmsg(""); return; }
+  $("mapInfo").textContent = cur.name + " (" + KINDS[cur.kind] + ")";
+  if (scn && scn.id === cur.id && scn.image_url === cur.image_url) { loadSceneObjects(); return; }
+  clearScene();
+  if (!cur.image_url) { mmsg(me.master ? "У сцены нет фона: загрузите его во вкладке «Сцены»." : "У этой сцены пока нет фона."); return; }
+  const r = await db.storage.from("maps").createSignedUrl(cur.image_url, 3600);
+  if (gen !== mapGen) return;
+  if (r.error) { mmsg("Фон не открылся. Мастеру: выполнен ли supabase_maps.sql?"); return; }
+  const img = new Image();
+  await new Promise(res => { img.onload = res; img.onerror = res; img.src = r.data.signedUrl; });
+  if (gen !== mapGen) return;
+  if (!img.naturalWidth) { mmsg("Фон не открылся."); return; }
+  scn = cur; dims = {w: img.naturalWidth, h: img.naturalHeight};
+  bg = L.imageOverlay(r.data.signedUrl, [[0, 0], [dims.h, dims.w]]).addTo(map);
+  map.setMaxBounds([[-dims.h * .1, -dims.w * .1], [dims.h * 1.1, dims.w * 1.1]]);
+  map.fitBounds([[0, 0], [dims.h, dims.w]]);
+  mmsg("");
+  loadSceneObjects();
+}
+
+async function loadSceneObjects() {
+  if (!scn || !dims) return;
+  const sid = scn.id;
+  const [t, e, fz, fs, po, zn] = await Promise.all([
+    db.from("tokens").select("id,label,kind,owner,character_id,x,y").eq("scene_id", sid),
+    db.from("effects").select("id,kind,x,y,radius").eq("scene_id", sid),
+    db.from("fog_zones").select("id,x,y,radius").eq("scene_id", sid),
+    db.from("settings").select("value").eq("key", "fog_" + sid).maybeSingle(),
+    db.from("map_points").select("id,name,kind,note,x,y,visible").eq("scene_id", sid),
+    me.master ? db.from("perception_zones").select("id,name,x,y,radius,dc,note,enabled").eq("scene_id", sid) : Promise.resolve({data: []})]);
+  if (!scn || scn.id !== sid) return;
+  toks = t.data || []; effs = e.data || [];
+  fogZ = fz.data || []; fogOn = !!(fs.data && fs.data.value && fs.data.value.on); $("fogBtn").setAttribute("aria-pressed", fogOn);
+  drawEffects(); drawTokens(); drawPois(po.data || []); drawZones(zn.data || []); loadZoneNotices();
+  if (scn.kind === "world" && !cityM.length) {
+    const c = await db.from("map_points").select("id,name,continent,x,y,note").eq("kind", "city");
+    if (scn && scn.id === sid) drawCities(c.data || []);
+  }
+}
+
+const norm = t => (t || "").toLowerCase().replace(/ё/g, "е").trim();
+const locFor = c => scenes.find(s => s.kind === "location" && norm(s.name).includes(norm(c.name)));
+$("toWorld").onclick = async () => {
+  const w = scenes.find(s => s.kind === "world");
+  if (!w) { mmsg("Сцена типа «Мир» не найдена."); return; }
+  const { error } = await db.rpc("set_current_scene", {p_id: w.id});
+  if (error) mmsg("Не удалось вернуться на карту мира."); else loadScenes();
 };
-const tg = window.Telegram && window.Telegram.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
 
-const MONTHS=['ЯНВАРЬ','ФЕВРАЛЬ','МАРТ','АПРЕЛЬ','МАЙ','ИЮНЬ','ИЮЛЬ','АВГУСТ','СЕНТЯБРЬ','ОКТЯБРЬ','НОЯБРЬ','ДЕКАБРЬ'];
-const CH=['НТВ','ПЕРВЫЙ КАНАЛ','ПЯТНИЦА','РЕН ТВ','РОССИЯ 1','СТС','ТВ ЦЕНТР','ТВ-3','ТНТ','ДОМАШНИЙ'];
-const DAYSL=['нет',...Array.from({length:31},(_,i)=>String(i+1))];
-const sel=a=>'select:'+a.join(',');
-
-// ===== СТРАНИЦЫ (команды бота, без /start) =====
-const PAGES = [
-  {id:'create',cmd:'create',tab:'Текст',title:'Рекламный текст',tag:'Напишем объявление под вашу площадку',btn:'Создать',
-   fields:[['company','Название компании','text'],['product','Продукт / услуга и её особенности','area'],['audience','Целевая аудитория','text'],['goal','Цель рекламы','text'],['format','Формат',sel(['Стандартный (10 сек)','Короткий (5 сек)','Расширенный (15 сек)'])],['tone','Тональность',sel(['Серьёзная','Юмористическая','Эмоциональная'])],['kind','Тип рекламы',sel(['Видео','Текст'])],['place','Адрес компании','text'],['phone','Контактный телефон','text'],['idea','Ключевая идея (если есть)','text'],['script','Проверка: вставьте готовый сценарий (тогда новый писать не будем)','area']]},
-  {id:'chat',cmd:'chat',tab:'Чат',title:'Чат',tag:'Спросите что угодно о рекламе',chat:true},
-  {id:'of',cmd:'of',word:true,tab:'Оффер',title:'Оффер',tag:'Соберём предложение, которое цепляет',btn:'Собрать',
-   fields:[['category','Для кого (категория бизнеса)','text'],['strategy','Стратегия и настроение',sel(['Рост и развитие','Борьба','Выживание'])],['pack','Пакет: что входит, цена, каналы','area'],['rivals','Конкуренты (до 10 компаний)','area'],['events','События и обстоятельства','area']]},
-  {id:'mplan',cmd:'mplan',tab:'Анализ',title:'Анализ компании',tag:'Разберём бизнес и конкурентов',btn:'Разобрать',
-   fields:[['company','Компания','text'],['industry','Отрасль','text'],['city','Город размещения','text','Нижневартовск'],['goal','Главная цель исследования',sel(['Найти точки роста','Подготовиться к встрече','Понять маркетинг компании','Сделать коммерческое предложение','Изучить конкурента','Разработать ТВ-кампанию'])],['site','Сайт компании (необязательно)','text']]},
-  {id:'excelcreat',cmd:'excelcreat',tab:'Медиаплан',title:'Медиаплан',tag:'Подберём канал и соберём план размещения',btn:'Рассчитать',
-   fields:[['budget','Бюджет, ₽','number',90000],['month','Месяц',sel(MONTHS),MONTHS[new Date().getMonth()]],['seconds','Длина ролика, сек','number',10],
-     ['gender','Пол аудитории',sel(['Все','Мужчины','Женщины'])],['age','Возраст',sel(['18+','16-24','25-39','40-54','55-64','65+'])],
-     ['city','Город',sel(['Нижневартовск','Тобольск','Ханты-Мансийск','Салехард'])],['days','Количество дней выхода','number',20],
-     ['channel','Ручной выбор канала',sel(['нет',...CH])],['start','Начать с числа',sel(DAYSL)],['end','Закончить числом',sel(DAYSL)]]}
-];
-// Страницы администратора: появляются только если сервер вернул role=admin
-const ADMIN = [
-  {id:'stats',tab:'Статистика',title:'Статистика',tag:'Кто и чем пользуется ботом',admin:true},
-  {id:'access',tab:'Доступ',title:'Доступ',tag:'Кому можно пользоваться ботом',admin:true},
-  {id:'db',tab:'База',title:'База Медиаскоп',tag:'Данные для расчётов. Видит и меняет только администратор',admin:true}
-];
-
-let role='user', me={name:''}, current='create', busy=false;
-const $=(s,r=document)=>r.querySelector(s);
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const pages=()=>role==='admin'?[...PAGES,...ADMIN]:PAGES;
-const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-
-// ===== СЕТЬ =====
-// Все запросы идут на один вебхук Make. Форма (не JSON) — чтобы браузер не делал предзапрос CORS.
-async function call(action,body={}){
-  const msg={action,initData:tg?tg.initData:'',...body};
-  const r=await fetch(CFG.makeWebhook,{method:'POST',body:new URLSearchParams({payload:JSON.stringify(msg)})});
-  if(!r.ok) throw new Error('Ошибка '+r.status);
-  const j=await r.json();
-  if(j.error) throw new Error(j.error);
-  return j;
+// Метки городов: координаты в пикселях холста Figma 150 000 × 100 000, пересчитываются под размер изображения сцены
+function drawCities(list) {
+  cityM.forEach(m => m.remove()); cityM = [];
+  list.forEach(c => {
+    const start = c.note === "Начальный город кампании";
+    const icon = L.divIcon({html: el("div", "cm" + (start ? " start" : "")), className: "", iconSize: start ? [18, 18] : [14, 14], iconAnchor: start ? [9, 9] : [7, 7]});
+    const m = L.marker(ll(c.x * dims.w / 150000, c.y * dims.h / 100000), {icon, keyboard: false, zIndexOffset: -100, bubblingMouseEvents: true}).addTo(map);
+    m.bindTooltip(c.name, {direction: "top", offset: [0, -8]});
+    m.bindPopup(() => {
+      const box = el("div"); box.appendChild(el("b", "", c.name)); box.appendChild(el("div", "", c.continent || ""));
+      if (c.note) box.appendChild(el("div", "", c.note));
+      if (me.master) {
+        const s = locFor(c);
+        if (!s) box.appendChild(el("small", "", "Локации города пока нет: нужна сцена типа «Локация» с именем города в названии."));
+        else if (!s.image_url) box.appendChild(el("small", "", "У локации «" + s.name + "» нет фона."));
+        else {
+          const b = el("button", "", "Открыть локацию для партии"); b.type = "button";
+          b.onclick = async () => {
+            const { error } = await db.rpc("set_current_scene", {p_id: s.id});
+            if (error) mmsg("Не удалось открыть локацию."); else { m.closePopup(); loadScenes(); }
+          };
+          box.appendChild(b);
+        }
+      }
+      return box;
+    });
+    m.on("click", () => { if (fxMode || rmMode) m.closePopup(); });
+    cityM.push(m);
+  });
+  refreshFog();
 }
-let demoUsers=[{u:'@anna',s:'active'},{u:'@boris',s:'active'},{u:'@clara',s:'blocked'},{u:'@denis',s:'pending'}],demoMode='list',demoLim=100;
-async function adminApi(path,opt={}){
-  if(CFG.makeWebhook){
-    if(path==='/admin/stats') return call('admin_stats');
-    if(path==='/admin/access') return call('admin_access',opt.body||{});
-    if(path==='/admin/db') return call('admin_db');
+
+function drawEffects() {
+  fxL.forEach(l => l.remove()); fxL = [];
+  effs.forEach(e => fxL.push(L.circle(ll(e.x, e.y), {radius: e.radius, color: "#3b2410", weight: 1, fillColor: "#2b1a10", fillOpacity: .6, interactive: false}).addTo(map)));
+}
+
+function tokIcon(t) {
+  const c = chars.find(c => c.id === t.character_id), src = c && c.photo_url && urls[c.photo_url];
+  const d = el("div", "tk " + t.kind);
+  if (src) { const i = el("img"); i.src = src; i.alt = ""; d.appendChild(i); } else d.textContent = (t.label || "?").trim().charAt(0).toUpperCase();
+  return L.divIcon({html: d, className: "", iconSize: [44, 44], iconAnchor: [22, 22]});
+}
+
+function drawTokens() {
+  const keep = new Set(toks.map(t => t.id));
+  Object.keys(tokM).forEach(id => { if (!keep.has(id)) { tokM[id].remove(); delete tokM[id]; } });
+  toks.forEach(t => {
+    let m = tokM[t.id];
+    if (m) { if (!dragging) m.setLatLng(ll(t.x, t.y)); return; }
+    const can = me.master || (t.owner && t.owner === me.id);
+    m = L.marker(ll(t.x, t.y), {draggable: !!can, icon: tokIcon(t), keyboard: false}).addTo(map);
+    const lab = el("span", "", t.label); m.bindTooltip(lab, {permanent: true, direction: "bottom", offset: [0, 22], className: "tkl"});
+    m.on("click", async () => {
+      if (!rmMode || !me.master) return;
+      if (!confirm("Убрать токен «" + t.label + "»?")) return;
+      const { error } = await db.from("tokens").delete().eq("id", t.id);
+      if (error) mmsg("Не удалось убрать токен."); else loadSceneObjects();
+    });
+    m.on("dragstart", () => { dragging = true; });
+    m.on("dragend", async () => {
+      const p = m.getLatLng(), x = Math.round(p.lng), y = Math.round(dims.h - p.lat);
+      const { error } = await db.from("tokens").update({x, y}).eq("id", t.id);
+      dragging = false;
+      if (error) { mmsg("Не удалось переместить токен."); loadSceneObjects(); }
+    });
+    tokM[t.id] = m;
+  });
+}
+
+function fillTokChars() {
+  const s = $("tokChar"), v = s.value; s.innerHTML = "";
+  chars.forEach(c => { const o = el("option", "", c.name + (c.profiles ? " (" + c.profiles.display_name + ")" : "")); o.value = c.id; s.appendChild(o); });
+  if (v) s.value = v;
+}
+async function addToken(row) {
+  if (!scn || !dims) { mmsg("Нет открытой сцены с фоном."); return; }
+  const { error } = await db.from("tokens").insert({scene_id: scn.id, x: Math.round(dims.w / 2), y: Math.round(dims.h / 2), ...row});
+  if (error) mmsg("Не удалось добавить токен."); else loadSceneObjects();
+}
+$("addTok").onclick = () => { const c = chars.find(c => c.id === $("tokChar").value); if (c) addToken({label: c.name, kind: "pc", character_id: c.id, owner: c.owner}); };
+$("addParty").onclick = () => addToken({label: "Партия", kind: "party"});
+function setMode(m) {
+  fxMode = m === "fx"; rmMode = m === "rm"; foMode = m === "fo"; fcMode = m === "fc"; poMode = m === "po"; zoMode = m === "zo";
+  [["fxBtn", fxMode], ["rmTok", rmMode], ["fogOpen", foMode], ["fogClose", fcMode], ["poBtn", poMode], ["zoBtn", zoMode]].forEach(([id, v]) => $(id).setAttribute("aria-pressed", v));
+  if (map) map.getContainer().style.cursor = (fxMode || foMode || poMode || zoMode) ? "crosshair" : (rmMode || fcMode) ? "pointer" : "";
+  mmsg(rmMode ? "Нажмите на токен, чтобы убрать его." : foMode ? "Нажимайте на карту, чтобы открыть зону." : fcMode ? "Нажмите на открытую зону, чтобы закрыть её." : poMode ? "Нажмите на карту, чтобы поставить точку. Новая точка скрыта от игроков." : zoMode ? "Нажмите на карту, чтобы поставить зону внимания. Игроки её не видят." : "");
+}
+$("fxBtn").onclick = () => setMode(fxMode ? "" : "fx");
+$("rmTok").onclick = () => setMode(rmMode ? "" : "rm");
+$("rmAll").onclick = async () => {
+  if (!scn || !confirm("Убрать ВСЕ токены на этой сцене? Персонажи в базе останутся.")) return;
+  const { error } = await db.from("tokens").delete().eq("scene_id", scn.id);
+  if (error) mmsg("Не удалось убрать."); else loadSceneObjects();
+};
+$("fxClear").onclick = async () => {
+  if (!scn || !confirm("Убрать все следы эффектов на этой сцене?")) return;
+  const { error } = await db.from("effects").delete().eq("scene_id", scn.id);
+  if (error) mmsg("Не удалось убрать."); else loadSceneObjects();
+};
+function boom() {
+  try {
+    const A = window.AudioContext || window.webkitAudioContext, a = new A(), n = a.sampleRate * .7, b = a.createBuffer(1, n, a.sampleRate), o = b.getChannelData(0);
+    for (let i = 0; i < n; i++) o[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+    const s = a.createBufferSource(), g = a.createGain(); s.buffer = b; g.gain.value = .5; s.connect(g); g.connect(a.destination); s.start();
+  } catch (e) {}
+}
+async function onMapClick(e) {
+  if (!me.master || !scn || !dims) return;
+  if (poMode) { poiClick(e); return; }
+  if (zoMode) { zoneClick(e); return; }
+  if (foMode || fcMode) { fogClick(e); return; }
+  if (!fxMode) return;
+  const x = Math.round(e.latlng.lng), y = Math.round(dims.h - e.latlng.lat);
+  if (x < 0 || y < 0 || x > dims.w || y > dims.h) return;
+  const radius = Math.round(Math.max(dims.w, dims.h) / 40);
+  const { error } = await db.from("effects").insert({scene_id: scn.id, kind: "scorched", x, y, radius});
+  if (error) mmsg("Не удалось поставить эффект."); else { fxSound(); loadSceneObjects(); }
+}
+
+// ---- Загрузка фона сцены (мастер)
+async function uploadBg(s, file) {
+  if (!file) return;
+  if (file.size > 20 * 1024 * 1024) { smsg("Файл больше 20 МБ."); return; }
+  smsg("Загружаю фон…");
+  const ext = file.type === "image/jpeg" ? "jpg" : file.type === "image/webp" ? "webp" : "png";
+  const path = s.id + "-" + Date.now() + "." + ext;
+  const up = await db.storage.from("maps").upload(path, file, {contentType: file.type});
+  if (up.error) { smsg("Фон не загрузился. Мастеру: выполнен ли supabase_maps.sql?"); return; }
+  const { error } = await db.from("scenes").update({image_url: path}).eq("id", s.id);
+  if (error) { smsg("Фон загружен, но не привязан к сцене."); return; }
+  if (s.image_url) await db.storage.from("maps").remove([s.image_url]);
+  await loadScenes(); smsg("Фон загружен.", true);
+}
+
+// ---- Проверка для гостя (на экране входа): данные должны быть закрыты
+async function guestCheck() {
+  let open = 0;
+  for (const n of names) {
+    const { data, error } = await db.from(n).select("*").limit(1);
+    if (!error && data.length) open++;
   }
-  await sleep(250);
-  if(path==='/admin/stats') return {today:42,users:17,errors:1,byCmd:{create:12,chat:20,of:5,mplan:3,excelcreat:2},recent:['@anna · chat · 12:04','@boris · excelcreat · 11:52','@clara · create · 11:40']};
-  if(path==='/admin/access'){ const b=opt.body||{}; if(b.user){const u=demoUsers.find(x=>x.u===b.user); if(u)u.s=b.status; else demoUsers.push({u:b.user,s:b.status||'active'});} if(b.mode)demoMode=b.mode; if(b.limit)demoLim=+b.limit; return {mode:demoMode,limit:demoLim,users:demoUsers.map(x=>({...x,today:3}))}; }
-  if(path==='/admin/db') return {name:'Данные Медиаскопа',updated:'демо'};
-}
-async function send(command,data){
-  if(CFG.makeWebhook){
-    const r=await call('run',{command,data});
-    if(!r.jobId) return r;                        // быстрые команды отвечают сразу
-    for(let i=0;i<60;i++){                        // медиаплан: ждём результат, опрашивая каждые 4 сек
-      await sleep(4000);
-      const p=await call('poll',{jobId:r.jobId});
-      if(p.status==='done') return p.result;
-      if(p.status==='error') throw new Error(p.error||'Ошибка расчёта');
-    }
-    throw new Error('Расчёт занял слишком долго');
-  }
-  await sleep(900); // демо без сервера
-  return command==='excelcreat'?demoPlan(data):{text:'[демо] Команда /'+command+'\n\n'+JSON.stringify(data,null,2)};
+  $("guestCheck").textContent = open ? "Внимание: гость видит данные (" + open + ")" : "Защита: гостю данные закрыты";
 }
 
-// ===== ДЕМО-МЕДИАПЛАН (заменится ответом сервера) =====
-const colL=n=>n<=26?String.fromCharCode(64+n):'A'+String.fromCharCode(64+n-26);
-function demoPlan(d){
-  const y=new Date().getFullYear(),mi=Math.max(0,MONTHS.indexOf(d.month)),first=new Date(y,mi,1);
-  const start=new Date(y,mi,1-first.getDay()), off=Math.round((first-start)/864e5)+(parseInt(d.start)||1)-1;
-  const wave=[1,2,3,3,2,1,0],wk=[19,8,21,10,23,12],we=[19,21,23,20,22,24],pl=[],sec=+d.seconds||10;
-  for(let i=0;i<(+d.days||20);i++){
-    const idx=off+i; if(idx>37)break; const dt=new Date(y,mi,idx-off+(parseInt(d.start)||1));
-    if(+d.end&&dt.getDate()>+d.end)break; if(dt.getMonth()!==mi)break;
-    const rows=(dt.getDay()%6===0?we:wk).slice(0,wave[i%7]);
-    rows.forEach(r=>pl.push({cell:colL(5+idx)+r,value:sec}));
+// ---- Экраны
+function showLogin() {
+  stopAudio(); rest = null; $("restBar").hidden = true; document.title = baseTitle; rt = []; gl = []; jq = []; jl = []; rolls = []; $("rollLog").innerHTML = ""; combat = null; cmb = []; $("tabCombat").textContent = "Бой"; $("zoLog").innerHTML = ""; $("zoSeen").innerHTML = ""; $("zoLogBox").hidden = $("zoSeenBox").hidden = true; $("jNotes").value = ""; delete $("jNotes").dataset.dirty; sounds = []; lastPlayed = {}; me = null; if (chan) { db.removeChannel(chan); chan = null; } clearScene();
+  $("app").hidden = true; $("login").hidden = false;
+  $("pass").value = ""; $("loginBtn").disabled = false;
+  guestCheck();
+}
+async function showApp(session) {
+  if (me && me.id === session.user.id) return;
+  $("login").hidden = true; $("app").hidden = false;
+  const { data } = await db.from("profiles").select("display_name,role").eq("id", session.user.id).maybeSingle();
+  me = {id: session.user.id, master: !!(data && data.role === "master")};
+  const role = me.master ? "Мастер" : "Игрок";
+  $("who").textContent = ((data && data.display_name) || session.user.email) + " · " + role;
+  const tbl = $("tables"); tbl.innerHTML = "";
+  for (const n of names) {
+    const { count, error } = await db.from(n).select("*", {count: "exact"}).limit(0);
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + n + "</td><td class='" + (error ? "bad" : "ok") + "'>" + (error ? "нет доступа" : count + " зап.") + "</td>";
+    tbl.appendChild(tr);
   }
-  return {demo:true,summary:{channel:d.channel!=='нет'?d.channel:'РЕН ТВ',strategy:'Пульсационная',ceff:'5,77 ₽',people:'15 601'},plan:{start:[start.getFullYear(),start.getMonth(),start.getDate()],placements:pl}};
+  sel = null; tab("chars"); $("tabSounds").hidden = !me.master; $("tabRules").hidden = false; $("tabRules").textContent = me.master ? "Правила" : "Как играть"; $("glH").textContent = me.master ? "Правила" : "Как играть"; $("glNew").parentElement.hidden = !me.master; document.querySelector("#rulesView details").hidden = !me.master; $("tabImp").hidden = !me.master; $("rClear").hidden = !me.master; loadCombat(); $("rHidL").hidden = !me.master; loadChars(); loadScenes(); loadSounds(); loadRest(); subscribeScenes();
 }
-function cellIdx(c){const m=/^([A-Z]+)(\d+)$/.exec(c);const n=[...m[1]].reduce((a,ch)=>a*26+ch.charCodeAt(0)-64,0);return [n-5,+m[2]];}
-function planModel(r){
-  const [y,m,d]=r.plan.start,dates=Array.from({length:38},(_,i)=>new Date(y,m,d+i)),map={};
-  r.plan.placements.forEach(p=>{const [c,row]=cellIdx(p.cell);map[row+'_'+c]=p.value;});
-  return {dates,map};
+
+// ---- Вкладки
+const VIEWS = {combat: ["combatView", "tabCombat"], rolls: ["rollView", "tabRolls"], imp: ["impView", "tabImp"], journal: ["journalView", "tabJournal"], rules: ["rulesView", "tabRules"], sounds: ["soundsView", "tabSounds"], chars: ["charsView", "tabChars"], scenes: ["scenesView", "tabScenes"], map: ["mapView", "tabMap"]};
+const flag = (n, on) => { $(n === "rolls" ? "tabRolls" : "tabCombat").classList.toggle("new", on); const d = document.querySelector('#dock [data-tab="' + n + '"]'); if (d) d.classList.toggle("new", on); };
+const OVER = ["combat", "rolls"]; // «Бой» и «Броски» открываются поверх карты
+function tab(name) {
+  const over = OVER.includes(name), wasOpen = over && !$(VIEWS[name][0]).hidden;
+  for (const [k, [v, b]] of Object.entries(VIEWS)) {
+    const isO = OVER.includes(k);
+    if (isO) $(v).hidden = !(over && k === name && !wasOpen); else if (!over) $(v).hidden = k !== name;
+    if (isO || !over) $(b).setAttribute("aria-selected", !$(v).hidden);
+  }
+  if (over && wasOpen) return;
+  if (name === "map") openScene();
+  if (name === "scenes") loadScenes();
+  if (name === "sounds") renderSounds();
+  if (name === "rules") loadGlossary();
+  if (name === "journal") loadJournal();
+  if (name === "imp") loadTables();
+  if (name === "combat") { flag("combat", false); loadCombat(); }
+  if (name === "rolls") { flag("rolls", false); fillRollChars(); loadRolls(); }
+  fillCampSel();
 }
-function renderPlan(box,r){
-  const {dates,map}=planModel(r),wd=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],S=r.summary;
-  let t='<table class="gr"><tr><th></th>'+dates.map(d=>`<th class="${d.getDay()%6===0?'we':''}">${d.getDate()}<br>${wd[d.getDay()]}</th>`).join('')+'</tr>';
-  for(let row=8;row<=24;row++) t+=`<tr><th>${row<19?'офф':'прайм'}</th>`+dates.map((d,c)=>`<td class="${map[row+'_'+c]?'on':''}">${map[row+'_'+c]||''}</td>`).join('')+'</tr>';
-  t+='</table>';
-  box.className='out plan';
-  box.innerHTML=`${r.demo?'<b>Демо-данные: расчёт на сервере ещё не подключён</b>':'<b>Медиаплан</b>'}
-  <div class="kpis">${[['Канал',S.channel],['Стратегия',S.strategy],['Цена эффективного зрителя',S.ceff],['Эффективных зрителей',S.people]].map(([l,v])=>`<div class="kpi"><b>${esc(v)}</b><span>${l}</span></div>`).join('')}</div>
-  ${r.info?`<div class="note">Выходов: ${r.info.spots} из ${r.info.maxSpots} · период: ${esc(r.info.period)} · по тарифу канала ≈ ${r.info.tariffTotal.toLocaleString('ru-RU')} ₽ при бюджете ${r.info.budget.toLocaleString('ru-RU')} ₽${(r.info.warnings||[]).map(w=>'<br>⚠ '+esc(w)).join('')}</div>`:''}
-  <div class="gwrap">${t}</div><button class="go mini" id="dl">Скачать Excel</button>`;
-  $('#dl').onclick=()=>{
-    if(!window.XLSX){box.append('Библиотека Excel не загружена.');return;}
-    const rows=[['',...dates.map(d=>d.toLocaleDateString('ru-RU'))]];
-    for(let row=8;row<=24;row++) rows.push([row<19?'Офф-тайм '+row:'Прайм-тайм '+row,...dates.map((d,c)=>map[row+'_'+c]||'')]);
-    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Медиаплан');XLSX.writeFile(wb,'mediaplan.xlsx');
+$("tabChars").onclick = () => tab("chars");
+$("tabRolls").onclick = () => tab("rolls");
+$("tabCombat").onclick = () => tab("combat");
+$("tabScenes").onclick = () => tab("scenes");
+$("tabSounds").onclick = () => tab("sounds");
+$("tabRules").onclick = () => tab("rules");
+$("tabJournal").onclick = () => tab("journal");
+$("tabImp").onclick = () => tab("imp");
+$("tabMap").onclick = () => tab("map");
+
+// ---- Персонажи
+const CLASSES = {warrior: "Воин", wizard: "Волшебник", rogue: "Плут", cleric_druid: "Жрец или друид"};
+let me = null, chars = [], sel = null, urls = {}, photoBlob = null, newChar = false, editMeta = false;
+const msg = (t, ok) => { $("charMsg").textContent = t; $("charMsg").className = "msg" + (ok ? " good" : ""); };
+
+async function loadChars() {
+  let { data, error } = await db.from("characters").select("id,owner,name,class,photo_url,notes,sheet,profiles(display_name)").order("created_at");
+  if (error) ({ data, error } = await db.from("characters").select("id,owner,name,class,photo_url,notes,profiles(display_name)").order("created_at"));
+  if (error) { msg("Не удалось загрузить персонажей."); return; }
+  chars = data; urls = {};
+  const paths = chars.map(c => c.photo_url).filter(Boolean);
+  if (paths.length) {
+    const r = await db.storage.from("photos").createSignedUrls(paths, 3600);
+    (r.data || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
+  }
+  await loadProgress();
+  if (!sel && !me.master && chars.length) sel = chars[0].id;
+  renderChars(); renderCombat();
+}
+
+function avatar(c) {
+  const el = document.createElement("img");
+  el.className = "av"; el.alt = "";
+  if (c && c.photo_url && urls[c.photo_url]) el.src = urls[c.photo_url]; else el.removeAttribute("src");
+  return el;
+}
+
+function renderChars() {
+  const list = $("charList"); list.innerHTML = "";
+  if (sel) newChar = false;
+  { const b = document.createElement("button"); b.type = "button"; b.className = "newch";
+    b.textContent = "+ Новый персонаж"; if (newChar) b.setAttribute("aria-current", "true");
+    b.onclick = () => { sel = null; newChar = true; editMeta = false; renderChars(); $("cName").focus(); };
+    list.appendChild(b); }
+  chars.forEach(c => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "ch";
+    if (c.id === sel) b.setAttribute("aria-current", "true");
+    const t = document.createElement("span"); t.textContent = c.name;
+    const s = document.createElement("small");
+    s.textContent = CLASSES[c.class] + (me.master && c.profiles ? " · " + c.profiles.display_name : "");
+    t.appendChild(s);
+    b.append(avatar(c), t); b.onclick = () => { sel = c.id; editMeta = false; renderChars(); };
+    list.appendChild(b);
+  });
+  const cur = chars.find(c => c.id === sel);
+  $("charTitle").textContent = cur ? "Персонаж: " + cur.name : "Новый персонаж";
+  $("cName").value = cur ? cur.name : ""; $("cClass").value = cur ? cur.class : "warrior";
+  $("cNotes").value = cur ? cur.notes : ""; $("cPhoto").value = ""; photoBlob = null;
+  const pv = $("cPreview"); const has = cur && cur.photo_url && urls[cur.photo_url];
+  pv.hidden = !has; if (has) pv.src = urls[cur.photo_url];
+  const showEd = !!cur || newChar;
+  $("charForm").hidden = !(newChar && !cur) && !(cur && editMeta); $("charEmpty").hidden = showEd; $("cancelNew").hidden = !(newChar && !cur);
+  $("charEmpty").textContent = chars.length ? "Выберите персонажа слева или создайте нового." : "Персонажей пока нет. Нажмите «Новый персонаж».";
+  $("delBtn").hidden = !(me.master && cur);
+  renderSheet(cur);
+  renderProgress(cur);
+}
+
+// ---- Лист персонажа: механики одинаковы для обеих редакций правил
+const ABIL = [["str", "Сила"], ["dex", "Ловкость"], ["con", "Телосложение"], ["int", "Интеллект"], ["wis", "Мудрость"], ["cha", "Харизма"]];
+const SKILLS = [["Акробатика", "dex"], ["Анализ", "int"], ["Атлетика", "str"], ["Внимательность", "wis"], ["Выживание", "wis"], ["Выступление", "cha"], ["Запугивание", "cha"], ["История", "int"], ["Ловкость рук", "dex"], ["Магия", "int"], ["Медицина", "wis"], ["Обман", "cha"], ["Природа", "int"], ["Проницательность", "wis"], ["Религия", "int"], ["Скрытность", "dex"], ["Убеждение", "cha"], ["Уход за животными", "wis"]];
+const sgn = n => (n < 0 ? "−" : "+") + Math.abs(n), abMod = s => Math.floor((s - 10) / 2);
+function getSheet(c) {
+  const d = {lvl: 1, ab: {str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10}, ac: 10, hp: {cur: 10, max: 10, tmp: 0}, spd: 30, ini: 0}, s = c.sheet || {}, sp = s.spl || {};
+  c.sheet = {...d, race: "", bg: "", insp: false, feat: "", desc: "", notes: "", goals: "", cond: "", exh: 0, ...s, prof: {ar: {...(s.prof && s.prof.ar)}, wp: {...(s.prof && s.prof.wp)}, ot: (s.prof && s.prof.ot) || ""},
+    ab: {...d.ab, ...s.ab}, hp: {...d.hp, ...s.hp}, sv: {...s.sv}, sk: {...s.sk},
+    hd: {die: 8, cur: 1, max: 1, ...s.hd}, ds: {s: 0, f: 0, ...s.ds}, coins: {cp: 0, sp: 0, gp: 0, ...s.coins},
+    atk: s.atk || [], inv: s.inv || [], spl: {slots: {...sp.slots}, list: sp.list || ""}};
+  return c.sheet;
+}
+// Лист в стиле LongStoryShort: слева характеристики, спасброски и навыки; в центре КД, хиты, спасброски от смерти, атаки; справа вкладки.
+function renderSheet(cur) {
+  const box = $("sheet"); box.innerHTML = ""; box.hidden = !cur; if (!cur) return;
+  const S = getSheet(cur), can = me.master || cur.owner === me.id, ups = [];
+  const pb = () => 2 + Math.floor((S.lvl - 1) / 4), mod = k => abMod(S.ab[k]);
+  const refresh = () => ups.forEach(f => f());
+  const note = el("p", "ms", ""), out = el("p", "sxout", "Нажмите на число, чтобы бросить d20."); let timer = null;
+  const save = () => {
+    clearTimeout(timer); note.textContent = "Сохранение…";
+    timer = setTimeout(async () => {
+      const { error } = await db.from("characters").update({sheet: S}).eq("id", cur.id);
+      note.textContent = error ? "Не удалось сохранить лист. Мастеру: выполните supabase_sheet_and_player_rules.sql." : "Лист сохранён.";
+    }, 700);
   };
-}
+  const bind = (obj, key, min, max, cls) => {
+    const i = el("input", "num" + (cls ? " " + cls : "")); i.type = "number"; i.min = min; i.max = max; i.value = obj[key]; i.disabled = !can;
+    i.oninput = () => { obj[key] = Math.min(max, Math.max(min, Math.round(+i.value) || 0)); refresh(); save(); };
+    ups.push(() => { if (document.activeElement !== i) i.value = obj[key]; }); return i;
+  };
+  const field = (obj, key, ph) => { const i = el("input"); i.value = obj[key] || ""; i.placeholder = ph; i.maxLength = 60; i.disabled = !can; i.setAttribute("aria-label", ph); i.oninput = () => { obj[key] = i.value; save(); }; return i; };
+  const area = (obj, key, ph, h) => { const a = el("textarea"); a.value = obj[key] || ""; a.placeholder = ph; a.maxLength = 4000; a.disabled = !can; a.style.minHeight = (h || 200) + "px"; a.setAttribute("aria-label", ph); a.oninput = () => { obj[key] = a.value; save(); }; return a; };
+  const mode = el("select", "sxmode"); [["normal", "обычный бросок"], ["adv", "с преимуществом"], ["dis", "с помехой"]].forEach(([v, x]) => { const o = el("option", "", x); o.value = v; mode.appendChild(o); }); mode.setAttribute("aria-label", "Режим броска d20");
+  const show = (label, r) => { out.textContent = label + ": " + rollText(r) + r.total; };
+  const call = async (label, count, sides, m, md) => {
+    out.textContent = "";
+    const { data, error } = await db.rpc("roll_dice", {p_label: label, p_count: count, p_sides: sides, p_mod: m, p_mode: md, p_hidden: false, p_character: cur.id});
+    if (error) { out.textContent = "Бросок не удался. Мастеру: выполнен ли supabase_rolls.sql?"; return; }
+    show(label, Array.isArray(data) ? data[0] : data);
+  };
+  const rollD20 = (label, bonus) => call(label, 1, 20, bonus, mode.value);
+  const rollDmg = (label, f) => {
+    const m = /^\s*(\d+)d(\d+)\s*([+-]\s*\d+)?\s*$/.exec(f || "");
+    if (!m || ![4, 6, 8, 10, 12, 20, 100].includes(+m[2]) || +m[1] > 20 || +m[1] < 1) { out.textContent = "Урон записывайте так: 1d8+2"; return; }
+    call(label + ": урон", +m[1], +m[2], +(m[3] || "0").replace(/\s/g, ""), "normal");
+  };
+  const chk = (label, bonus) => { const b = el("button", "sxv"); b.type = "button"; b.disabled = !can; b.setAttribute("aria-label", "Бросок: " + label); ups.push(() => b.textContent = sgn(bonus())); b.onclick = () => rollD20(label, bonus()); return b; };
+  const skB = n => { const s = SKILLS.find(x => x[0] === n); return mod(s[1]) + pb() * (S.sk[n] || 0); };
+  const lab = (node, text) => { const d = el("div", "sxbox"); d.append(node, el("small", "", text)); return d; };
 
-// ===== ОТРИСОВКА =====
-function fieldHTML([key,label,type,def]){
-  const v=def!=null?String(def):'';
-  if(type.startsWith('select:')) return `<label>${label}</label><select name="${key}">${type.slice(7).split(',').map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}</select>`;
-  if(type==='area') return `<label>${label}</label><textarea name="${key}"></textarea>`;
-  return `<label>${label}</label><input name="${key}" type="${type}" value="${v}" inputmode="${type==='number'?'numeric':'text'}">`;
-}
-function renderRole(){
-  $('#rolebar').innerHTML=`<span>${esc(me.name||'гость')} · ${role==='admin'?'администратор':'пользователь'}</span>`+'<button id="clr" class="lnk">очистить историю</button>'+(!tg&&!CFG.makeWebhook?'<button id="swap" class="lnk">превью: сменить роль</button>':'');
-}
-function render(){
-  loadStore();
-  const list=pages();
-  if(!list.some(p=>p.id===current)) current=list[0].id;
-  $('#pages').innerHTML=list.map(p=>`<section class="page" id="p-${p.id}"><h1>${p.title}</h1><p class="sub">${p.tag}</p>`+
-    (p.chat?`<div class="card"><div class="chat" id="chatlog"><div class="msg bot">Здравствуйте! Чем помочь?</div></div><div class="row"><input id="chatin" placeholder="Сообщение"><button class="go" id="chatsend">Ок</button></div></div>`
-    :p.admin?`<div class="card" id="a-${p.id}">Загрузка…</div>`
-    :`<div class="card" id="f-${p.id}">${p.fields.map(fieldHTML).join('')}<button class="go" data-run="${p.id}">${p.btn}</button></div><div class="out empty" id="o-${p.id}">Здесь появится результат.</div><div class="hist" id="h-${p.id}"></div>`)+`</section>`).join('');
-  $('#nav').innerHTML=list.map(p=>`<button data-go="${p.id}">${p.tab}</button>`).join('');
-  renderRole(); restoreAll(); show(current);
-}
-function show(id){
-  if(busy) return; current=id;
-  document.querySelectorAll('.page').forEach(el=>el.classList.toggle('on',el.id==='p-'+id));
-  document.querySelectorAll('nav button').forEach(b=>{const on=b.dataset.go===id;b.classList.toggle('on',on);if(on)b.scrollIntoView({inline:'center',block:'nearest'});});
-  window.scrollTo(0,0);
-  if(role==='admin'&&ADMIN.some(p=>p.id===id)) loadAdmin(id);
-}
-function setBusy(v){busy=v;$('#nav').classList.toggle('lock',v);document.querySelectorAll('.go').forEach(b=>b.disabled=v);}
+  // Шапка: портрет, имя, КД, скорость, мастерство, золото, вдохновение, хиты
+  const head = el("div", "sxh"), pt = el("div", "sxp");
+  { const u = cur.photo_url && urls[cur.photo_url]; if (u) { const im = el("img"); im.src = u; im.alt = ""; pt.appendChild(im); } else pt.textContent = (cur.name || "?").charAt(0).toUpperCase(); }
+  const ident = el("div", "sxid"), meta = el("div", "sxmeta"), lv = el("span", "sxlv", "Ур. "); lv.appendChild(bind(S, "lvl", 1, 20));
+  meta.append(el("span", "sxcls", CLASSES[cur.class] || ""), field(S, "race", "Народ"), field(S, "bg", "Происхождение"), lv);
+  const ed = el("button", "sxedit", "Имя, класс, фото"); ed.type = "button"; ed.disabled = !can; ed.onclick = () => { editMeta = !editMeta; renderChars(); };
+  ident.append(el("h2", "", cur.name), meta, ed);
+  const ac = el("div", "sxac"); ac.innerHTML = '<svg viewBox="0 0 60 70" aria-hidden="true"><path d="M30 3L55 12V34C55 50 44 62 30 67C16 62 5 50 5 34V12Z" fill="none" stroke="currentColor" stroke-width="3"/></svg>'; ac.append(bind(S, "ac", 0, 40), el("small", "", "КД"));
+  const spd = el("div", "sxst"); spd.append(bind(S, "spd", 0, 200), el("small", "", "Скорость, фт"));
+  const pbx = el("div", "sxst"), pbv = el("b", "", ""); ups.push(() => pbv.textContent = sgn(pb())); pbx.append(pbv, el("small", "", "Мастерство"));
+  const gold = el("div", "sxst"); gold.append(bind(S.coins, "gp", 0, 999999), el("small", "", "Золото"));
+  const insp = el("button", "sxinsp", "☀"); insp.type = "button"; insp.disabled = !can; insp.setAttribute("aria-label", "Вдохновение"); insp.title = "Вдохновение";
+  const paintI = () => insp.setAttribute("aria-pressed", !!S.insp); paintI(); insp.onclick = () => { S.insp = !S.insp; paintI(); save(); };
+  const hpb = el("div", "sxst sxhp"); hpb.append(el("div", "sxhpn"), el("small", "", "Хиты"));
+  hpb.firstChild.append(bind(S.hp, "cur", 0, 999, "big"), "/", bind(S.hp, "max", 1, 999, "big"));
+  head.append(pt, ident, ac, spd, pbx, gold, insp, hpb);
 
-// ===== АДМИНКА =====
-const kpi=a=>`<div class="kpis">${a.map(([l,v])=>`<div class="kpi"><b>${esc(v)}</b><span>${l}</span></div>`).join('')}</div>`;
-async function loadAdmin(id){
-  const box=$('#a-'+id);
-  try{
-    if(id==='stats'){const s=await adminApi('/admin/stats');
-      box.innerHTML=kpi([['Запросов сегодня',s.today],['Пользователей',s.users],['Ошибок',s.errors]])+`<div class="list"><b>По командам</b>${Object.entries(s.byCmd).map(([k,v])=>`<div><span>/${k}</span><span>${v}</span></div>`).join('')}</div><div class="list"><b>Последние запросы</b>${s.recent.map(x=>`<div><span>${esc(x)}</span></div>`).join('')}</div>`;}
-    if(id==='access'){const a=await adminApi('/admin/access');const u=Array.isArray(a)?a:a.users,mode=a.mode||'list',lim=a.limit||'';
-      const lbl={active:'доступ есть',blocked:'заблокирован',pending:'ждёт разрешения'};
-      box.innerHTML=`<div class="list"><div><span>Режим: ${mode==='open'?'открытый (любой пользователь Telegram)':'только по списку'}</span><button class="lnk" data-mode="${mode==='open'?'list':'open'}">${mode==='open'?'Только по списку':'Открыть для всех'}</button></div></div>`+
-        `<div class="list">${u.map(x=>`<div><span>${esc(x.u)} · ${lbl[x.s]||esc(x.s)}${x.today!=null?' · сегодня '+x.today:''}</span><span>${x.s!=='active'?`<button class="lnk" data-tog="${esc(x.u)}" data-st="active">${x.s==='pending'?'Разрешить':'Вернуть'}</button>`:''}${x.s!=='blocked'?`<button class="lnk" data-tog="${esc(x.u)}" data-st="blocked">Заблокировать</button>`:''}</span></div>`).join('')}</div>`+
-        `<label>Добавить пользователя</label><div class="row"><input id="newu" placeholder="@username"><button class="go" id="addu">Ок</button></div>`+
-        `<label>Лимит запросов на человека в день</label><div class="row"><input id="lim" type="number" value="${esc(lim)}"><button class="go" id="setlim">Ок</button></div>`;}
-    if(id==='db'){const d=await adminApi('/admin/db');
-      box.innerHTML=kpi([['База',d.name],['Данные за',d.updated]])+`<p class="note">Данные Медиаскопа (цены, охваты, рейтинги, население) зашиты в модуль расчёта в Make. Чтобы обновить базу, пришлите новый Excel — модуль пересоберём.</p>`;}
-  }catch(e){box.textContent='Не удалось загрузить: '+e.message;}
-}
+  // Левая часть: две колонки характеристик с навыками
+  const group = ([k, n]) => {
+    const g = el("section", "sxg"), h = el("div", "sxgh"); h.append(el("h3", "", n), el("hr"), bind(S.ab, k, 1, 30, "sxscore"));
+    const c1 = el("div", "sxchip"), c2 = el("div", "sxchip"), cb = el("input"), chips = el("div", "sxchips");
+    c1.append(el("span", "", "Проверка"), chk("Проверка: " + n, () => mod(k)));
+    cb.type = "checkbox"; cb.checked = !!S.sv[k]; cb.disabled = !can; cb.setAttribute("aria-label", "Владение спасброском: " + n); cb.onchange = () => { S.sv[k] = cb.checked; refresh(); save(); };
+    c2.append(cb, el("span", "", "Спасбросок"), chk("Спасбросок: " + n, () => mod(k) + (S.sv[k] ? pb() : 0)));
+    chips.append(c1, c2); g.append(h, chips);
+    SKILLS.filter(s => s[1] === k).forEach(([sn]) => {
+      const r = el("div", "sxsk"), d = el("button", "sxdot"); d.type = "button"; d.disabled = !can;
+      const paint = () => { const v = S.sk[sn] || 0; d.textContent = v === 2 ? "◉" : v === 1 ? "●" : "○"; d.setAttribute("aria-label", "Владение навыком " + sn + ": " + ["нет", "владение", "мастерство"][v]); };
+      d.onclick = () => { S.sk[sn] = ((S.sk[sn] || 0) + 1) % 3; paint(); refresh(); save(); }; paint();
+      r.append(d, el("span", "", sn), chk(sn, () => skB(sn))); g.appendChild(r);
+    });
+    return g;
+  };
+  const byKey = Object.fromEntries(ABIL), cA = el("div", "sxcol"), cB = el("div", "sxcol");
+  ["str", "con", "int", "cha"].forEach(k => cA.appendChild(group([k, byKey[k]])));
+  ["dex", "wis"].forEach(k => cB.appendChild(group([k, byKey[k]])));
+  const pas = el("p", "sxps", ""); ups.push(() => pas.textContent = "Пассивные чувства: Внимательность " + (10 + skB("Внимательность")) + ", Проницательность " + (10 + skB("Проницательность")) + ", Анализ " + (10 + skB("Анализ")));
+  const pills = (title, grp, items) => {
+    const w = el("div", "sxprof"), row = el("div", "sxpills"); w.appendChild(el("h4", "", title));
+    items.forEach(([k, n]) => { const b = el("button", "sxpill", n); b.type = "button"; b.disabled = !can; const paint = () => b.setAttribute("aria-pressed", !!S.prof[grp][k]); paint(); b.onclick = () => { S.prof[grp][k] = !S.prof[grp][k]; paint(); save(); }; row.appendChild(b); });
+    w.appendChild(row); return w;
+  };
+  const oth = el("div", "sxprof"); oth.append(el("h4", "", "Прочие владения и языки"), area(S.prof, "ot", "Инструменты, языки, прочее", 90));
+  cB.append(pas, pills("Владение доспехами", "ar", [["l", "Лёгкие"], ["m", "Средние"], ["h", "Тяжёлые"], ["s", "Щит"]]), pills("Владение оружием", "wp", [["s", "Простое"], ["m", "Воинское"], ["o", "Другое"]]), oth);
+  const abil = el("div", "sxabil"); abil.append(cA, cB);
 
-// ===== ЗАПУСК КОМАНД =====
-// ===== ИСТОРИЯ (хранится на устройстве, отдельно для каждого пользователя) =====
-let store={};
-const SKEY=()=>'mm1:'+(me.name||'guest');
-function loadStore(){try{store=JSON.parse(localStorage.getItem(SKEY())||'{}')||{};}catch(e){store={};}}
-function saveStore(){try{localStorage.setItem(SKEY(),JSON.stringify(store));}catch(e){}}
-function formData(id){const d={};$('#f-'+id).querySelectorAll('[name]').forEach(el=>d[el.name]=el.value.trim());return d;}
-function fillForm(id,d){$('#f-'+id).querySelectorAll('[name]').forEach(el=>{if(d&&d[el.name]!=null)el.value=d[el.name];});}
-function keep(id,data,text,plan){
-  const rec=store[id]||{hist:[]};
-  rec.data=data;rec.text=text||'';rec.plan=plan||null;
-  const sum=plan?'Медиаплан · '+plan.summary.channel:text;
-  rec.hist=[{ts:Date.now(),data,text:text||'',plan:plan||null,sum:String(sum).replace(/\s+/g,' ').slice(0,56)},...(rec.hist||[])].slice(0,10);
-  store[id]=rec;saveStore();renderHist(id);
-}
-function renderHist(id){
-  const h=$('#h-'+id);if(!h)return;const l=(store[id]&&store[id].hist)||[];
-  h.innerHTML=l.length?'<span>История</span>'+l.map((x,i)=>{const d=new Date(x.ts);
-    const t=String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    return `<button class="lnk" data-hid="${id}" data-hist="${i}">${t} · ${esc(x.sum)}</button>`;}).join(''):'';
-}
-function showText(p,box,txt){
-  box.className='out';box.innerHTML='<b>'+p.title+'</b>';box.append(document.createTextNode(txt));
-  const ac=document.createElement('div');ac.className='acts';
-  ac.innerHTML='<input class="rv" placeholder="Что изменить? Например: короче, веселее">'+
-    `<button class="go mini" data-rev="${p.id}">Доработать</button>`+(p.word?`<button class="go mini" data-word="${p.id}">Скачать Word</button>`:'');
-  box.append(ac);
-}
-function showRec(p,box,rec){
-  if(rec.plan) renderPlan(box,rec.plan);
-  else if(rec.text) showText(p,box,rec.text);
-}
-function openHist(id,i){
-  const p=PAGES.find(x=>x.id===id),rec=store[id],e=rec&&rec.hist&&rec.hist[i];if(!e)return;
-  fillForm(id,e.data);rec.data=e.data;rec.text=e.text;rec.plan=e.plan;saveStore();
-  showRec(p,$('#o-'+id),e);window.scrollTo(0,$('#o-'+id).offsetTop-80);
-}
-function chatAdd(c,t){const log=$('#chatlog');const m=document.createElement('div');m.className='msg '+c;m.textContent=t;log.append(m);log.scrollTop=log.scrollHeight;return m;}
-function restoreAll(){
-  PAGES.forEach(p=>{
-    if(p.chat){(store.chat||[]).forEach(m=>chatAdd(m.c,m.t));return;}
-    const rec=store[p.id];if(!rec)return;
-    fillForm(p.id,rec.data);showRec(p,$('#o-'+p.id),rec);renderHist(p.id);
+  // Правая часть: инициатива, истощение, состояния, здоровье, вкладки
+  const iw = el("div", "sxini"); iw.append(chk("Инициатива", () => mod("dex") + S.ini), bind(S, "ini", -20, 20, "mini")); iw.lastChild.title = "Добавочный бонус инициативы"; iw.lastChild.setAttribute("aria-label", "Добавочный бонус инициативы");
+  const top = el("div", "sxtop"); top.append(lab(iw, "Инициатива"), lab(bind(S, "exh", 0, 6), "Истощение"), lab(field(S, "cond", "—"), "Состояния"));
+  const hl = el("div", "sxhealth"), amt = el("input", "num"); amt.type = "number"; amt.min = 1; amt.value = 1; amt.disabled = !can; amt.setAttribute("aria-label", "Сколько");
+  const dmg = el("button", "danger", "Урон"), heal = el("button", "", "Лечение"); dmg.type = heal.type = "button"; dmg.disabled = heal.disabled = !can;
+  const amount = () => Math.max(0, Math.round(+amt.value) || 0);
+  dmg.onclick = () => { let a = amount(); const x = Math.min(S.hp.tmp, a); S.hp.tmp -= x; a -= x; S.hp.cur = Math.max(0, S.hp.cur - a); refresh(); save(); };
+  heal.onclick = () => { S.hp.cur = Math.min(S.hp.max, S.hp.cur + amount()); refresh(); save(); };
+  const hr = el("div", "row"); hr.append(amt, dmg, heal, el("span", "", "Временные"), bind(S.hp, "tmp", 0, 999));
+  const hdr = el("div", "sxline"), die = el("select"); die.disabled = !can; die.setAttribute("aria-label", "Кость хитов");
+  [6, 8, 10, 12].forEach(d => { const o = el("option", "", "d" + d); o.value = d; die.appendChild(o); }); die.value = S.hd.die; die.onchange = () => { S.hd.die = +die.value; save(); };
+  hdr.append(el("span", "", "Кости хитов"), die, bind(S.hd, "cur", 0, 20), "из", bind(S.hd, "max", 0, 20));
+  const dsr = el("div", "sxline"); dsr.appendChild(el("span", "", "Спасброски от смерти"));
+  [["s", "Успех"], ["f", "Провал"]].forEach(([key, label]) => {
+    dsr.appendChild(el("small", "", label));
+    for (let i = 1; i <= 3; i++) { const cb = el("input"); cb.type = "checkbox"; cb.checked = S.ds[key] >= i; cb.disabled = !can; cb.setAttribute("aria-label", label + " " + i); cb.onchange = () => { S.ds[key] = cb.checked ? i : i - 1; refresh(); save(); }; ups.push(() => { cb.checked = S.ds[key] >= i; }); dsr.appendChild(cb); }
   });
+  hl.append(hr, hdr, dsr);
+  const R = el("div", "sxright"), bar = el("div", "sxtabs"), panes = [];
+  const pane = (title, nodes) => { const d = el("div"); d.hidden = panes.length !== sxTab; d.append(...nodes); const b = el("button", "", title); b.type = "button"; b.setAttribute("aria-pressed", panes.length === sxTab); const idx = panes.length; b.onclick = () => { sxTab = idx; panes.forEach(([pd, pb2]) => { pd.hidden = pd !== d; pb2.setAttribute("aria-pressed", pd === d); }); }; panes.push([d, b]); bar.appendChild(b); R.appendChild(d); };
+  const atkL = el("div"), drawAtk = () => {
+    atkL.innerHTML = "";
+    S.atk.forEach((it, i) => {
+      const r = el("div", "sxrow");
+      const n = el("input"); n.value = it.name || ""; n.placeholder = "Оружие"; n.disabled = !can; n.setAttribute("aria-label", "Оружие"); n.oninput = () => { it.name = n.value; save(); };
+      const bn = el("input", "num"); bn.type = "number"; bn.value = it.bonus || 0; bn.disabled = !can; bn.title = "Бонус к атаке"; bn.setAttribute("aria-label", "Бонус к атаке"); bn.oninput = () => { it.bonus = Math.round(+bn.value) || 0; save(); };
+      const dm = el("input"); dm.value = it.dmg || ""; dm.placeholder = "1d8+2"; dm.disabled = !can; dm.setAttribute("aria-label", "Урон"); dm.oninput = () => { it.dmg = dm.value; save(); };
+      const bx = el("div", "sxbtns"), a1 = el("button", "sxv", "Атака"), a2 = el("button", "sxv", "Урон"), x = el("button", "danger", "×"); a1.type = a2.type = x.type = "button"; a1.disabled = a2.disabled = x.disabled = !can;
+      a1.onclick = () => rollD20((it.name || "Атака"), it.bonus || 0); a2.onclick = () => rollDmg(it.name || "Атака", it.dmg);
+      x.onclick = () => { S.atk.splice(i, 1); drawAtk(); save(); };
+      bx.append(a1, a2, x); r.append(n, bn, dm, bx); atkL.appendChild(r);
+    });
+  };
+  drawAtk();
+  const addA = el("button", "", "Добавить атаку"); addA.type = "button"; addA.disabled = !can; addA.onclick = () => { S.atk.push({name: "", bonus: 0, dmg: ""}); drawAtk(); };
+  const ah = el("div", "sxrow sxrh"); ah.append(el("span", "", "Название"), el("span", "", "Бонус"), el("span", "", "Урон / вид"), el("span", ""));
+  pane("Атаки", [ah, atkL, addA]);
+  pane("Способности", [area(S, "feat", "Умения, черты и способности")]);
+  const coins = el("div", "sxline"); coins.append(el("span", "", "Монеты"), "мед.", bind(S.coins, "cp", 0, 999999), "сер.", bind(S.coins, "sp", 0, 999999), "зол.", bind(S.coins, "gp", 0, 999999));
+  const invL = el("div"), drawInv = () => {
+    invL.innerHTML = "";
+    S.inv.forEach((it, i) => {
+      const r = el("div", "sxline"), n = el("input"), q = el("input", "num"), x = el("button", "danger", "×");
+      n.value = it.name || ""; n.placeholder = "Предмет"; n.disabled = !can; n.oninput = () => { it.name = n.value; save(); };
+      q.type = "number"; q.value = it.qty == null ? 1 : it.qty; q.disabled = !can; q.title = "Количество"; q.oninput = () => { it.qty = Math.max(0, Math.round(+q.value) || 0); save(); };
+      x.type = "button"; x.disabled = !can; x.onclick = () => { S.inv.splice(i, 1); drawInv(); save(); };
+      r.append(n, q, x); invL.appendChild(r);
+    });
+  };
+  drawInv();
+  const addI = el("button", "", "Добавить предмет"); addI.type = "button"; addI.disabled = !can; addI.onclick = () => { S.inv.push({name: "", qty: 1}); drawInv(); };
+  pane("Снаряжение", [coins, invL, addI]);
+  pane("Личность", [area(S, "desc", "Внешность, характер, история")]);
+  pane("Цели", [area(S, "goals", "Цели и обеты")]);
+  pane("Заметки", [area(S, "notes", "Личные заметки")]);
+  const slots = el("div", "sxslots");
+  for (let l = 1; l <= 9; l++) { const s = S.spl.slots[l] || (S.spl.slots[l] = {m: 0, u: 0}), c = el("div", "sxbox"); c.append(el("small", "", l + " ур."), bind(s, "u", 0, 9), bind(s, "m", 0, 9)); c.title = "Потрачено и всего ячеек"; slots.appendChild(c); }
+  pane("Заклинания", [el("p", "ms", "Ячейки: потрачено сверху, всего снизу."), slots, area(S.spl, "list", "Заклинания и заговоры")]);
+  bar.appendChild(mode); R.prepend(bar); R.prepend(hl); R.prepend(top);
+
+  const main = el("div", "sxmain"); main.append(abil, R);
+  box.append(head, out, main, note);
+  refresh();
 }
-function clearHistory(){
-  const go=()=>{store={};saveStore();render();};
-  if(tg&&tg.showConfirm) tg.showConfirm('Очистить сохранённую историю?',ok=>{if(ok)go();}); else if(confirm('Очистить сохранённую историю?')) go();
+let sxTab = 0;
+
+// ---- Прогресс: шкалы практики, вехи, открытые способности
+const SCALES = {
+  warrior: [["training","Тренировки"],["battles","Бои"],["weapons","Оружие"]],
+  wizard: [["spells","Заклинания"],["places","Места силы"],["knowledge","Знания"]],
+  rogue: [["deeds","Дела"],["connections","Связи"],["risk","Риск"]],
+  cleric_druid: [["rites","Обряды"],["altars","Алтари"],["help","Помощь"]]};
+let prog = {}, ms = [{k:1,n:2},{k:2,n:4},{k:3,n:6}]; // веха: на k шкалах по n действий
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x !== undefined) e.textContent = x; return e; };
+
+async function loadProgress() {
+  const r = await db.from("character_progress").select("character_id,practice,abilities");
+  prog = {}; (r.data || []).forEach(p => prog[p.character_id] = p);
+  const st = await db.from("settings").select("value").eq("key", "milestones").maybeSingle();
+  if (st.data && Array.isArray(st.data.value) && st.data.value.length === 3) ms = st.data.value;
+}
+const getP = id => prog[id] || (prog[id] = {character_id: id, practice: {}, abilities: []});
+const reached = (cls, p) => ms.map(m => SCALES[cls].filter(([k]) => (p.practice[k] || 0) >= m.n).length >= m.k);
+
+async function saveProg(p) {
+  const { error } = await db.from("character_progress").upsert({character_id: p.character_id, practice: p.practice, abilities: p.abilities}, {onConflict: "character_id"});
+  if (error) { msg("Не удалось сохранить прогресс."); await loadProgress(); return false; }
+  return true;
 }
 
-// ===== ЗАПУСК КОМАНД =====
-const textOf=r=>typeof r==='string'?r:(r.text||r.result||JSON.stringify(r));
-async function run(id){
-  const p=PAGES.find(x=>x.id===id),box=$('#o-'+id),data=formData(id);
-  if(!Object.values(data).some(v=>v)){box.className='out empty';box.textContent='Заполни хотя бы одно поле.';return;}
-  setBusy(true);box.className='out empty';box.textContent='Считаем…';
-  try{
-    const r=await send(p.cmd,data);
-    if(r&&r.plan){renderPlan(box,r);keep(id,data,'',r);}
-    else{const t=textOf(r);showText(p,box,t);keep(id,data,t);}
-  }catch(e){box.className='out';box.textContent='Не удалось выполнить: '+e.message;}
-  setBusy(false);
-}
-async function revise(id){
-  const p=PAGES.find(x=>x.id===id),box=$('#o-'+id),rec=store[id],ins=(box.querySelector('.rv')||{}).value;
-  if(!rec||!rec.text||!ins||!ins.trim())return;
-  const base=formData(id),data={...base,previous:rec.text,revise:ins.trim()};
-  setBusy(true);box.className='out empty';box.textContent='Дорабатываем…';
-  try{const t=textOf(await send(p.cmd,data));showText(p,box,t);keep(id,base,t);}
-  catch(e){showText(p,box,'Не удалось доработать: '+e.message+'\n\n'+rec.text);}
-  setBusy(false);
-}
-async function chat(){
-  const inp=$('#chatin'),text=inp.value.trim();if(!text)return;
-  const prev=(store.chat||[]).slice(-8).map(m=>(m.c==='me'?'Пользователь: ':'Ассистент: ')+m.t).join('\n').slice(-3000);
-  chatAdd('me',text);inp.value='';setBusy(true);const w=chatAdd('bot','…');
-  try{
-    const r=await send('chat',{message:prev?'Предыдущий диалог:\n'+prev+'\n\nНовое сообщение пользователя: '+text:text});
-    const t=typeof r==='string'?r:(r.text||r.result||'Пустой ответ');w.textContent=t;
-    store.chat=[...(store.chat||[]),{c:'me',t:text},{c:'bot',t}].slice(-60);saveStore();
-  }catch(e){w.textContent='Ошибка: '+e.message;}
-  setBusy(false);
-}
-
-// ===== WORD (.docx без внешних библиотек) =====
-const CRCT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
-function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRCT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
-function zipStore(files,type){
-  const enc=new TextEncoder(),parts=[],cd=[];let off=0;
-  const u16=n=>[n&255,(n>>8)&255],u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
-  files.forEach(([name,str])=>{
-    const data=enc.encode(str),nb=enc.encode(name),crc=crc32(data);
-    const lh=new Uint8Array([0x50,0x4b,3,4,...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0),...nb]);
-    parts.push(lh,data);
-    cd.push(new Uint8Array([0x50,0x4b,1,2,...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off),...nb]));
-    off+=lh.length+data.length;
+function renderProgress(cur) {
+  const box = $("progress"); box.innerHTML = ""; box.hidden = !cur; if (!cur) return;
+  const p = getP(cur.id), M = me.master;
+  box.appendChild(el("h2", "", "Прогресс"));
+  SCALES[cur.class].forEach(([key, label]) => {
+    const row = el("div", "prow"); row.appendChild(el("span", "", label));
+    const val = el("b", "", String(p.practice[key] || 0));
+    if (M) {
+      [["−", -1], ["+", 1]].forEach(([t, d], i) => {
+        const b = el("button", "", t); b.type = "button"; b.setAttribute("aria-label", (d > 0 ? "Добавить: " : "Убрать: ") + label);
+        b.onclick = async () => {
+          const before = reached(cur.class, p).filter(Boolean).length;
+          p.practice = {...p.practice, [key]: Math.max(0, (p.practice[key] || 0) + d)};
+          if (await saveProg(p)) {
+            const after = reached(cur.class, p).filter(Boolean).length;
+            renderProgress(cur);
+            if (after > before) msg("Достигнута веха " + after + ": можно открыть способность.", true);
+          }
+        };
+        row.appendChild(b); if (i === 0) row.appendChild(val);
+      });
+    } else row.appendChild(val);
+    box.appendChild(row);
   });
-  const cs=cd.reduce((a,b)=>a+b.length,0);
-  const end=new Uint8Array([0x50,0x4b,5,6,...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cs),...u32(off),...u16(0)]);
-  return new Blob([...parts,...cd,end],{type});
-}
-function docxBlob(text){
-  const x=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const lines=String(text).replace(/\r/g,'').replace(/\*\*/g,'').replace(/^#+\s*/gm,'').split('\n');
-  const body=lines.map((l,i)=>{const bold=i===0||/^Пакет\b/.test(l);
-    return '<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>'+(bold?'<w:b/><w:sz w:val="30"/>':'<w:sz w:val="24"/>')+'</w:rPr><w:t xml:space="preserve">'+x(l)+'</w:t></w:r></w:p>';}).join('');
-  const NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
-  return zipStore([
-    ['[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
-    ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
-    ['word/document.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document '+NS+'><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>']
-  ],'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-}
-async function saveBlob(blob,name){
-  try{const f=new File([blob],name,{type:blob.type});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return;}
-  }catch(e){if(e&&e.name==='AbortError')return;}
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
-}
-function wordDl(id){
-  const rec=store[id];if(!rec||!rec.text)return;
-  const d=new Date(),n=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
-  saveBlob(docxBlob(rec.text),'offer-'+n+'.docx');
+  box.appendChild(el("h3", "", "Вехи"));
+  const r = reached(cur.class, p);
+  ms.forEach((m, i) => box.appendChild(el("p", "ms" + (r[i] ? " ok" : ""), "Веха " + (i + 1) + ": на " + m.k + " шк. по " + m.n + " действий, " + (r[i] ? "достигнута" : "пока нет"))));
+  box.appendChild(el("h3", "", "Открытые способности"));
+  if (!p.abilities.length) box.appendChild(el("p", "ms", "Пока нет."));
+  p.abilities.forEach(a => {
+    const d = el("div", "ab", a.name); if (a.text) d.appendChild(el("small", "", a.text));
+    if (M) { const b = el("button", "danger", "Убрать"); b.type = "button"; b.onclick = async () => { p.abilities = p.abilities.filter(x => x.id !== a.id); if (await saveProg(p)) renderProgress(cur); }; d.appendChild(b); }
+    box.appendChild(d);
+  });
+  if (!M) return;
+  const n = el("input"); n.placeholder = "Название способности"; n.maxLength = 60;
+  const t = el("input"); t.placeholder = "Описание (необязательно)"; t.maxLength = 300;
+  const add = el("button", "", "Открыть способность"); add.type = "button";
+  add.onclick = async () => {
+    if (!n.value.trim()) return;
+    p.abilities = [...p.abilities, {id: crypto.randomUUID(), name: n.value.trim(), text: t.value.trim()}];
+    if (await saveProg(p)) renderProgress(cur);
+  };
+  const f = el("div", "row"); f.append(n, t, add); box.appendChild(f);
+  box.appendChild(el("h3", "", "Пороги вех (темп кампании)"));
+  const inputs = ms.map((m, i) => {
+    const k = el("input", "num"), c = el("input", "num"); k.type = c.type = "number"; k.min = c.min = 1; k.value = m.k; c.value = m.n;
+    const line = el("p", "ms", "Веха " + (i + 1) + ": шкал "); line.append(k, " по ", c, " действий"); box.appendChild(line); return [k, c];
+  });
+  const sv = el("button", "", "Сохранить пороги"); sv.type = "button";
+  sv.onclick = async () => {
+    const v = inputs.map(([k, c]) => ({k: Math.min(3, Math.max(1, +k.value || 1)), n: Math.max(1, +c.value || 1)}));
+    const { error } = await db.from("settings").upsert({key: "milestones", value: v}, {onConflict: "key"});
+    if (error) msg("Не удалось сохранить пороги."); else { ms = v; renderProgress(cur); msg("Пороги сохранены.", true); }
+  };
+  box.appendChild(sv);
 }
 
-document.addEventListener('click',async e=>{
-  const g=e.target.closest('[data-go]'); if(g) return show(g.dataset.go);
-  const r=e.target.closest('[data-run]'); if(r&&!busy) return run(r.dataset.run);
-  const rv=e.target.closest('[data-rev]'); if(rv&&!busy) return revise(rv.dataset.rev);
-  const wd=e.target.closest('[data-word]'); if(wd) return wordDl(wd.dataset.word);
-  const hh=e.target.closest('[data-hist]'); if(hh&&!busy) return openHist(hh.dataset.hid,+hh.dataset.hist);
-  if(e.target.id==='clr') return clearHistory();
-  if(e.target.id==='chatsend'&&!busy) return chat();
-  if(e.target.id==='swap'){role=role==='admin'?'user':'admin';me.name=role==='admin'?'@matt_lum (демо)':'@user (демо)';return render();}
-  const md=e.target.closest('[data-mode]'); if(md){await adminApi('/admin/access',{body:{mode:md.dataset.mode}});return loadAdmin('access');}
-  if(e.target.id==='setlim'){const v=$('#lim').value.trim();if(v){await adminApi('/admin/access',{body:{limit:v}});loadAdmin('access');}return;}
-  const t=e.target.closest('[data-tog]'); if(t){await adminApi('/admin/access',{body:{user:t.dataset.tog,status:t.dataset.st}});return loadAdmin('access');}
-  if(e.target.id==='addu'){const v=$('#newu').value.trim();if(v){await adminApi('/admin/access',{body:{user:v.startsWith('@')?v:'@'+v,status:'active'}});loadAdmin('access');}}
+async function shrink(file) {
+  const bmp = await createImageBitmap(file), k = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(r, "image/jpeg", .85));
+}
+$("cPhoto").addEventListener("change", async () => {
+  const f = $("cPhoto").files[0]; if (!f) return;
+  try { photoBlob = await shrink(f); $("cPreview").src = URL.createObjectURL(photoBlob); $("cPreview").hidden = false; }
+  catch (e) { photoBlob = null; msg("Не получилось прочитать картинку."); }
 });
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='chatin'&&!busy)chat();});
 
-(async function init(){
-  if(CFG.makeWebhook){try{const r=await call('me');role=r.role;me={name:r.name};}catch(e){role='user';if(/оступ/.test(e.message)){document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:#f1e9dc">'+esc(e.message)+'</div>';return;}}}
-  else if(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user){me.name='@'+(tg.initDataUnsafe.user.username||tg.initDataUnsafe.user.id);}
-  render();
+$("charForm").addEventListener("submit", async e => {
+  e.preventDefault(); msg("");
+  const name = $("cName").value.trim(); if (!name) { msg("Укажите имя."); return; }
+  $("saveBtn").disabled = true;
+  const fields = {name, class: $("cClass").value, notes: $("cNotes").value};
+  const cur = chars.find(c => c.id === sel);
+  const q = cur ? db.from("characters").update(fields).eq("id", cur.id) : db.from("characters").insert({...fields, owner: me.id});
+  const { data: row, error } = await q.select("id,owner,photo_url").single();
+  if (error) { msg("Не удалось сохранить."); $("saveBtn").disabled = false; return; }
+  let note = "Сохранено.";
+  if (photoBlob) {
+    const path = row.owner + "/" + row.id + "-" + Date.now() + ".jpg";
+    const up = await db.storage.from("photos").upload(path, photoBlob, {contentType: "image/jpeg"});
+    if (up.error) note = "Сохранено, но фото не загрузилось.";
+    else { await db.from("characters").update({photo_url: path}).eq("id", row.id); if (row.photo_url) await db.storage.from("photos").remove([row.photo_url]); }
+  }
+  sel = row.id; editMeta = false; await loadChars(); msg(note, note === "Сохранено."); $("saveBtn").disabled = false;
+});
+
+$("delBtn").addEventListener("click", async () => {
+  const cur = chars.find(c => c.id === sel);
+  if (!cur || !confirm("Удалить персонажа «" + cur.name + "»? Это нельзя отменить.")) return;
+  const { error } = await db.from("characters").delete().eq("id", cur.id);
+  if (error) { msg("Не удалось удалить."); return; }
+  if (cur.photo_url) await db.storage.from("photos").remove([cur.photo_url]);
+  sel = null; await loadChars(); msg("Удалено.", true);
+});
+
+$("cancelNew").onclick = () => { newChar = false; renderChars(); };
+
+// ---- Сцены: мастер создаёт и открывает для партии, игрок видит открытую сцену
+const KINDS = {world: "Мир", location: "Локация", generated: "Сгенерированная", route_segment: "Сегмент маршрута"};
+let scenes = [], chan = null;
+const smsg = (t, ok) => { $("sceneMsg").textContent = t; $("sceneMsg").className = "msg" + (ok ? " good" : ""); };
+
+async function loadScenes() {
+  const { data, error } = await db.from("scenes").select("id,name,kind,image_url,is_current").order("created_at");
+  if (error) { smsg("Сцены недоступны. Мастеру: выполните supabase_scenes.sql."); return; }
+  smsg(""); scenes = data; renderScenes(); if (!$("mapView").hidden) openScene();
+}
+function renderScenes() {
+  const cur = scenes.find(s => s.is_current);
+  $("curScene").textContent = cur ? "Сейчас открыта: " + cur.name + " (" + KINDS[cur.kind] + ")"
+    : (me.master ? "Ни одна сцена не открыта для партии." : "Мастер ещё не открыл сцену.");
+  $("sceneForm").hidden = !me.master;
+  const list = $("sceneList"); list.innerHTML = "";
+  if (!me.master) return;
+  scenes.forEach(s => {
+    const row = el("div", "sc"), t = el("span", "", s.name); t.appendChild(el("small", "", KINDS[s.kind] + (s.image_url ? " · фон загружен" : " · фона нет")));
+    row.appendChild(t);
+    if (s.is_current) row.appendChild(el("span", "tag", "открыта для партии"));
+    else {
+      const open = el("button", "", "Открыть для партии"); open.type = "button";
+      open.onclick = async () => {
+        const { error } = await db.rpc("set_current_scene", {p_id: s.id});
+        if (error) smsg("Не удалось открыть сцену."); else { await loadScenes(); smsg("Сцена открыта.", true); }
+      };
+      row.appendChild(open);
+    }
+    const fi = el("input"); fi.type = "file"; fi.accept = "image/png,image/jpeg,image/webp"; fi.hidden = true;
+    const up = el("label", "upl", s.image_url ? "Заменить фон" : "Загрузить фон"); up.appendChild(fi);
+    fi.onchange = () => uploadBg(s, fi.files[0]); row.appendChild(up);
+    const del = el("button", "danger", "Удалить"); del.type = "button";
+    del.onclick = async () => {
+      if (!confirm("Удалить сцену «" + s.name + "» вместе с её токенами, эффектами и туманом? Это нельзя отменить.")) return;
+      const { error } = await db.from("scenes").delete().eq("id", s.id);
+      if (error) smsg("Не удалось удалить."); else { if (s.image_url) await db.storage.from("maps").remove([s.image_url]); await loadScenes(); smsg("Удалено.", true); }
+    };
+    row.appendChild(del); list.appendChild(row);
+  });
+}
+$("sceneForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("sName").value.trim(); if (!name) return;
+  const { error } = await db.from("scenes").insert({name, kind: $("sKind").value});
+  if (error) { smsg("Не удалось создать сцену."); return; }
+  $("sName").value = ""; await loadScenes(); smsg("Сцена создана.", true);
+});
+function subscribeScenes() {
+  if (chan) return;
+  chan = db.channel("scenes-live")
+    .on("postgres_changes", {event: "*", schema: "public", table: "scenes"}, () => loadScenes())
+    .on("postgres_changes", {event: "*", schema: "public", table: "tokens"}, () => { if (!dragging) loadSceneObjects(); })
+    .on("postgres_changes", {event: "*", schema: "public", table: "effects"}, () => loadSceneObjects())
+    .on("postgres_changes", {event: "*", schema: "public", table: "sounds"}, () => loadSounds())
+    .on("postgres_changes", {event: "*", schema: "public", table: "rests"}, () => loadRest())
+    .on("postgres_changes", {event: "*", schema: "public", table: "map_points"}, () => loadSceneObjects())
+    .on("postgres_changes", {event: "*", schema: "public", table: "fog_zones"}, () => loadSceneObjects())
+    .on("postgres_changes", {event: "*", schema: "public", table: "settings"}, p => { const k = p.new && p.new.key; if (!k || k.startsWith("fog_")) loadSceneObjects(); })
+    .on("postgres_changes", {event: "*", schema: "public", table: "rolls"}, () => { loadRolls(); if ($("rollView").hidden) flag("rolls", true); })
+    .on("postgres_changes", {event: "*", schema: "public", table: "combats"}, onCombatEvent)
+    .on("postgres_changes", {event: "*", schema: "public", table: "combatants"}, onCombatEvent)
+    .on("postgres_changes", {event: "*", schema: "public", table: "zone_notices"}, onZoneEvent)
+    .on("broadcast", {event: "combat"}, onCombatEvent)
+    .on("broadcast", {event: "poi"}, () => loadSceneObjects())
+    .subscribe();
+}
+
+// ---- Звуки: файлы в закрытом хранилище, состояние в таблице sounds, все клиенты слушают изменения в реальном времени
+let sounds = [], audioOn = false, audioEls = {}, sndExp = {}, lastPlayed = {}, fxSoundId = null;
+const snmsg = (t, ok) => { $("snMsg").textContent = t; $("snMsg").className = "msg" + (ok ? " good" : ""); };
+
+async function getAudio(s) {
+  const a0 = audioEls[s.id];
+  if (a0 && (sndExp[s.id] > Date.now() || !a0.paused)) return a0;
+  const r = await db.storage.from("sounds").createSignedUrl(s.file_path, 3600);
+  if (r.error) return null;
+  const a = a0 || new Audio(); a.src = r.data.signedUrl; a.preload = "auto";
+  audioEls[s.id] = a; sndExp[s.id] = Date.now() + 3300000; return a;
+}
+async function playSound(s) {
+  if (!audioOn) return;
+  const a = await getAudio(s); if (!a) return;
+  a.loop = s.kind === "loop"; a.volume = Math.min(1, s.volume * $("vol").value / 100);
+  if (s.kind === "oneshot") a.currentTime = 0;
+  a.play().catch(() => {});
+}
+function syncLoops() {
+  sounds.filter(s => s.kind === "loop").forEach(s => {
+    if (s.playing && audioOn) playSound(s); else if (audioEls[s.id]) audioEls[s.id].pause();
+  });
+}
+function stopAudio() {
+  audioOn = false; $("audioBtn").setAttribute("aria-pressed", "false"); $("audioBtn").textContent = "Включить звук";
+  Object.values(audioEls).forEach(a => a.pause());
+}
+$("audioBtn").onclick = () => {
+  if (audioOn) { stopAudio(); return; }
+  audioOn = true; $("audioBtn").setAttribute("aria-pressed", "true"); $("audioBtn").textContent = "Звук включён"; syncLoops();
+};
+$("vol").oninput = syncLoops;
+
+async function loadSounds() {
+  const { data, error } = await db.from("sounds").select("id,name,kind,file_path,volume,playing,last_played").order("created_at");
+  if (error) { if (me && me.master) snmsg("Звуки недоступны. Мастеру: выполните supabase_sounds.sql."); return; }
+  sounds = data;
+  sounds.forEach(s => {
+    if (s.kind === "oneshot" && s.id in lastPlayed && s.last_played && s.last_played !== lastPlayed[s.id]) playSound(s);
+    lastPlayed[s.id] = s.last_played;
+  });
+  syncLoops();
+  if (me && me.master) {
+    const f = await db.from("settings").select("value").eq("key", "fx_sound").maybeSingle();
+    fxSoundId = f.data && f.data.value ? f.data.value.sound_id : null;
+    renderSounds();
+  }
+}
+
+async function triggerSound(s) {
+  const patch = s.kind === "loop" ? {playing: !s.playing} : {last_played: new Date().toISOString()};
+  const { error } = await db.from("sounds").update(patch).eq("id", s.id);
+  if (error) mmsg("Не удалось запустить звук.");
+}
+function fxSound() { const s = sounds.find(x => x.id === fxSoundId); if (s) triggerSound(s); else boom(); }
+
+function renderSounds() {
+  const b = $("board"); b.innerHTML = "";
+  sounds.forEach(s => {
+    const btn = el("button", "", (s.kind === "loop" ? "∞ " : "▶ ") + s.name); btn.type = "button";
+    if (s.kind === "loop") btn.setAttribute("aria-pressed", s.playing);
+    btn.onclick = () => triggerSound(s); b.appendChild(btn);
+  });
+  if (!sounds.length) b.appendChild(el("small", "", "Звуков пока нет: загрузите их во вкладке «Звуки»."));
+  const list = $("soundList"); list.innerHTML = "";
+  sounds.forEach(s => {
+    const row = el("div", "snd"); row.appendChild(el("span", "", s.name + (s.kind === "loop" ? " (фоновый)" : " (разовый)")));
+    const go = el("button", "", s.kind === "loop" ? (s.playing ? "Выключить" : "Включить") : "Проиграть"); go.type = "button"; go.onclick = () => triggerSound(s);
+    const v = el("input"); v.type = "range"; v.min = 0; v.max = 100; v.value = Math.round(s.volume * 100); v.setAttribute("aria-label", "Громкость: " + s.name);
+    v.onchange = async () => { await db.from("sounds").update({volume: v.value / 100}).eq("id", s.id); };
+    const del = el("button", "danger", "Удалить"); del.type = "button";
+    del.onclick = async () => {
+      if (!confirm("Удалить звук «" + s.name + "»?")) return;
+      const { error } = await db.from("sounds").delete().eq("id", s.id);
+      if (error) { snmsg("Не удалось удалить."); return; }
+      await db.storage.from("sounds").remove([s.file_path]);
+      if (fxSoundId === s.id) await saveFxSound("");
+      loadSounds();
+    };
+    row.append(go, v, del); list.appendChild(row);
+  });
+  const sel = $("fxSound"); sel.innerHTML = "";
+  const none = el("option", "", "встроенный хлопок"); none.value = ""; sel.appendChild(none);
+  sounds.filter(s => s.kind === "oneshot").forEach(s => { const o = el("option", "", s.name); o.value = s.id; sel.appendChild(o); });
+  sel.value = fxSoundId || "";
+}
+async function saveFxSound(id) {
+  fxSoundId = id || null;
+  await db.from("settings").upsert({key: "fx_sound", value: {sound_id: fxSoundId}}, {onConflict: "key"});
+}
+$("fxSound").onchange = () => saveFxSound($("fxSound").value);
+
+$("soundForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = $("snFile").files[0]; if (!f) return;
+  if (f.size > 5 * 1024 * 1024) { snmsg("Файл больше 5 МБ."); return; }
+  snmsg("Загружаю…");
+  const ext = ((f.name.split(".").pop() || "mp3").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5)) || "mp3";
+  const path = crypto.randomUUID() + "." + ext;
+  const up = await db.storage.from("sounds").upload(path, f, {contentType: f.type || "audio/mpeg"});
+  if (up.error) { snmsg("Файл не загрузился. Мастеру: выполнен ли supabase_sounds.sql?"); return; }
+  const { error } = await db.from("sounds").insert({name: $("snName").value.trim(), kind: $("snKind").value, file_path: path});
+  if (error) { await db.storage.from("sounds").remove([path]); snmsg("Не удалось сохранить звук."); return; }
+  $("soundForm").reset(); snmsg("Звук добавлен.", true); loadSounds();
+});
+
+// ---- Туман войны: затемнение поверх карты, мастер открывает круглые зоны.
+// Для игроков вне открытых зон скрыты метки городов и чужие токены (токены партии и свой остаются).
+const inFog = (x, y) => !fogZ.some(z => Math.hypot(z.x - x, z.y - y) <= z.radius * .9);
+const showLayer = (m, v) => { if (v && !map.hasLayer(m)) m.addTo(map); else if (!v && map.hasLayer(m)) m.remove(); };
+function ensureFog() {
+  if (fogCv || !map) return;
+  fogCv = document.createElement("canvas");
+  fogCv.style.cssText = "position:absolute;left:0;top:0;pointer-events:none;z-index:640";
+  map.getContainer().appendChild(fogCv);
+  map.on("move zoom zoomend moveend resize viewreset", drawFog);
+}
+function drawFog() {
+  if (!fogCv || !map) return;
+  const c = map.getContainer(), w = c.clientWidth, h = c.clientHeight;
+  if (fogCv.width !== w) fogCv.width = w;
+  if (fogCv.height !== h) fogCv.height = h;
+  const g = fogCv.getContext("2d"); g.clearRect(0, 0, w, h);
+  if (!fogOn || !dims) return;
+  g.fillStyle = me.master ? "rgba(6,12,18,.55)" : "rgb(6,12,18)"; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = "destination-out";
+  const k = Math.pow(2, map.getZoom());
+  fogZ.forEach(z => {
+    const p = map.latLngToContainerPoint(ll(z.x, z.y)), r = z.radius * k;
+    const gr = g.createRadialGradient(p.x, p.y, r * .7, p.x, p.y, r);
+    gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, r, 0, 7); g.fill();
+  });
+  g.globalCompositeOperation = "source-over";
+}
+function refreshFog() {
+  if (!map || !me) return;
+  ensureFog(); drawFog();
+  const hide = fogOn && !me.master;
+  toks.forEach(t => {
+    const m = tokM[t.id]; if (!m) return;
+    const always = t.kind === "party" || (t.owner && t.owner === me.id);
+    showLayer(m, !hide || always || !inFog(t.x, t.y));
+  });
+  cityM.forEach(m => { const p = m.getLatLng(); showLayer(m, !hide || !inFog(p.lng, dims.h - p.lat)); });
+  Object.values(poiM).forEach(m => { const p = m.getLatLng(); showLayer(m, !hide || !inFog(p.lng, dims.h - p.lat)); });
+}
+async function fogClick(e) {
+  const x = Math.round(e.latlng.lng), y = Math.round(dims.h - e.latlng.lat);
+  if (x < 0 || y < 0 || x > dims.w || y > dims.h) return;
+  if (foMode) {
+    const r = Math.round(Math.max(dims.w, dims.h) / {s: 40, m: 20, l: 10}[$("fogSize").value]);
+    const { error } = await db.from("fog_zones").insert({scene_id: scn.id, x, y, radius: r});
+    if (error) mmsg("Не удалось открыть зону."); else loadSceneObjects();
+  } else {
+    const hit = fogZ.filter(z => Math.hypot(z.x - x, z.y - y) <= z.radius).sort((a, b) => a.radius - b.radius)[0];
+    if (!hit) return;
+    const { error } = await db.from("fog_zones").delete().eq("id", hit.id);
+    if (error) mmsg("Не удалось закрыть зону."); else loadSceneObjects();
+  }
+}
+$("fogBtn").onclick = async () => {
+  if (!scn) return;
+  const { error } = await db.from("settings").upsert({key: "fog_" + scn.id, value: {on: !fogOn}}, {onConflict: "key"});
+  if (error) mmsg("Не удалось переключить туман."); else loadSceneObjects();
+};
+$("fogOpen").onclick = () => setMode(foMode ? "" : "fo");
+$("fogClose").onclick = () => setMode(fcMode ? "" : "fc");
+$("fogReset").onclick = async () => {
+  if (!scn || !confirm("Закрыть все открытые зоны на этой сцене?")) return;
+  const { error } = await db.from("fog_zones").delete().eq("scene_id", scn.id);
+  if (error) mmsg("Не удалось закрыть зоны."); else loadSceneObjects();
+};
+
+// ---- Правила: глоссарий с поиском без ИИ (окончания слов, мелкие опечатки, синонимы в тегах)
+let gl = [], glSel = null, glEditing = null;
+const gmsg = (t, ok) => { $("glMsg").textContent = t; $("glMsg").className = "msg" + (ok ? " good" : ""); };
+const nz = t => (t || "").toLowerCase().replace(/ё/g, "е");
+const words = t => nz(t).split(/[^a-zа-я0-9]+/).filter(w => w.length > 1);
+const stem = w => w.length > 3 ? w.slice(0, w.length - (w.length > 6 ? 3 : w.length > 4 ? 2 : 1)) : w;
+function lev1(a, b) { // отличаются не больше чем одной буквой (замена, вставка, перестановка)
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1) || (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2));
+  const [s, l] = a.length < b.length ? [a, b] : [b, a];
+  return s.slice(i) === l.slice(i + 1);
+}
+function hit(q, ws) {
+  const s = stem(q);
+  if (ws.some(w => w.startsWith(s))) return 1;
+  if (q.length >= 5 && ws.some(w => lev1(q, w) || lev1(s, w.slice(0, s.length)))) return .6;
+  return 0;
+}
+function searchGl(qs, cat) {
+  const list = gl.filter(a => !cat || a.category === cat), qw = words(qs);
+  if (!qw.length) return list;
+  const scored = list.map(a => {
+    const x = a._ix || (a._ix = {t: words(a.title), g: words(a.tags), b: words(a.body)});
+    let sc = 0, all = true;
+    qw.forEach(q => { const h = Math.max(hit(q, x.t) * 5, hit(q, x.g) * 4, hit(q, x.b)); if (!h) all = false; sc += h; });
+    return {a, sc, all};
+  }).filter(r => r.sc > 0);
+  const strict = scored.filter(r => r.all);
+  return (strict.length ? strict : scored).sort((p, q) => q.sc - p.sc).map(r => r.a);
+}
+function snippet(a, qs) {
+  const b = a.body.replace(/\s+/g, " "), nb = nz(b);
+  for (const q of words(qs)) {
+    const i = nb.indexOf(stem(q));
+    if (i >= 0) { const st = Math.max(0, i - 40); return (st ? "…" : "") + b.slice(st, st + 140) + (st + 140 < b.length ? "…" : ""); }
+  }
+  return b.slice(0, 140) + (b.length > 140 ? "…" : "");
+}
+
+async function loadGlossary() {
+  let { data, error } = await db.from("glossary").select("id,title,category,tags,body,source,for_players").order("title");
+  if (error) ({ data, error } = await db.from("glossary").select("id,title,category,tags,body,source").order("title"));
+  if (error) { gmsg("Глоссарий недоступен. Мастеру: выполните supabase_glossary.sql."); return; }
+  gl = data; gmsg(""); renderGl();
+}
+function renderGl() {
+  const cats = [...new Set(gl.map(a => a.category))].sort(), sel = $("glCat"), key = cats.join("|");
+  if (sel.dataset.k !== key) {
+    const keep = sel.value; sel.innerHTML = ""; sel.dataset.k = key;
+    const all = el("option", "", "Все категории"); all.value = ""; sel.appendChild(all);
+    cats.forEach(c => { const o = el("option", "", c); o.value = c; sel.appendChild(o); });
+    sel.value = cats.includes(keep) ? keep : "";
+    const dl = $("glCats"); dl.innerHTML = ""; cats.forEach(c => { const o = el("option"); o.value = c; dl.appendChild(o); });
+  }
+  const q = $("glQ").value, res = searchGl(q, sel.value), list = $("glList"); list.innerHTML = "";
+  if (!res.length) list.appendChild(el("p", "ms", gl.length ? "Ничего не найдено." : "Статей пока нет."));
+  res.slice(0, 40).forEach(a => {
+    const b = el("button", "ch"); b.type = "button"; if (a.id === glSel) b.setAttribute("aria-current", "true");
+    const t = el("span", "", a.title); t.appendChild(el("small", "", a.category + " · " + snippet(a, q)));
+    b.appendChild(t); b.onclick = () => { glSel = a.id; glEditing = null; renderGl(); }; list.appendChild(b);
+  });
+  if (res.length > 40) list.appendChild(el("p", "ms", "Показаны первые 40 из " + res.length + ", уточните запрос."));
+  const cur = gl.find(a => a.id === glSel), v = $("glView"); v.innerHTML = ""; v.hidden = !cur || glEditing !== null;
+  $("glForm").hidden = glEditing === null;
+  if (cur && glEditing === null) {
+    v.appendChild(el("h3", "", cur.title));
+    v.appendChild(el("p", "ms", cur.category + (cur.source ? " · " + cur.source : "") + (cur.tags ? " · " + cur.tags : "") + (me.master && cur.for_players ? " · видна игрокам" : "")));
+    const body = el("div", "", cur.body); body.style.whiteSpace = "pre-wrap"; v.appendChild(body);
+    if (!me.master) return;
+    const r = el("div", "row"), ed = el("button", "", "Править"), del = el("button", "danger", "Удалить"); ed.type = del.type = "button";
+    ed.onclick = () => openGlForm(cur);
+    del.onclick = async () => {
+      if (!confirm("Удалить статью «" + cur.title + "»?")) return;
+      const { error } = await db.from("glossary").delete().eq("id", cur.id);
+      if (error) gmsg("Не удалось удалить."); else { glSel = null; loadGlossary(); }
+    };
+    r.append(ed, del); v.appendChild(r);
+  }
+}
+function openGlForm(a) {
+  glEditing = a || {}; glSel = a ? a.id : glSel;
+  $("glTitle").value = a ? a.title : ""; $("glCategory").value = a ? a.category : ($("glCat").value || "Общее");
+  $("glTags").value = a ? a.tags : ""; $("glSource").value = a ? a.source : ""; $("glBody").value = a ? a.body : ""; $("glPub").checked = !!(a && a.for_players);
+  renderGl(); $("glTitle").focus();
+}
+$("glQ").addEventListener("input", renderGl);
+$("glCat").addEventListener("change", renderGl);
+$("glNew").onclick = () => openGlForm(null);
+$("glCancel").onclick = () => { glEditing = null; renderGl(); };
+$("glForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const row = {title: $("glTitle").value.trim(), category: $("glCategory").value.trim() || "Общее", tags: $("glTags").value.trim(), source: $("glSource").value.trim(), body: $("glBody").value, for_players: $("glPub").checked};
+  const q = glEditing && glEditing.id ? db.from("glossary").update(row).eq("id", glEditing.id).select("id").single() : db.from("glossary").insert(row).select("id").single();
+  const { data, error } = await q;
+  if (error) { gmsg("Не удалось сохранить."); return; }
+  glSel = data.id; glEditing = null; await loadGlossary(); gmsg("Сохранено.", true);
+});
+$("glImport").onclick = async () => {
+  const parts = $("glImp").value.split(/^# /m).map(p => p.trim()).filter(Boolean);
+  const rows = parts.map(p => {
+    const nl = p.indexOf("\n"), head = (nl < 0 ? p : p.slice(0, nl)).split("|").map(x => x.trim());
+    return {title: head[0], category: head[1] || "Общее", tags: head[2] || "", body: nl < 0 ? "" : p.slice(nl + 1).trim()};
+  }).filter(r => r.title);
+  if (!rows.length) { gmsg("Не нашёл статей: каждая должна начинаться со строки «# Название | Категория | теги»."); return; }
+  if (rows.length > 200) { gmsg("За один раз не больше 200 статей."); return; }
+  const { error } = await db.from("glossary").insert(rows);
+  if (error) { gmsg("Не удалось добавить."); return; }
+  $("glImp").value = ""; await loadGlossary(); gmsg("Добавлено статей: " + rows.length + ".", true);
+};
+
+// ---- Журнал: прошлая серия, задания, личные заметки
+const QST = {active: "в работе", done: "выполнено", failed: "провалено"};
+let jq = [], jl = [];
+const jmsg = (t, ok) => { $("jMsg").textContent = t; $("jMsg").className = "msg" + (ok ? " good" : ""); };
+
+async function loadJournal() {
+  const [q, l, n] = await Promise.all([
+    db.from("quests").select("id,title,body,kind,status,visible").order("created_at"),
+    db.from("session_log").select("id,session_no,title,summary").order("session_no", {ascending: false}),
+    db.from("player_notes").select("body").eq("owner", me.id).maybeSingle()]);
+  jmsg(q.error || n.error ? "Часть журнала недоступна. Мастеру: выполните supabase_journal.sql." : "");
+  jq = q.data || []; jl = l.data || [];
+  if (!$("jNotes").dataset.dirty) $("jNotes").value = n.data ? n.data.body : "";
+  renderJournal();
+}
+function renderJournal() {
+  $("sessForm").hidden = $("qForm").hidden = !me.master;
+  const ss = $("jSess"); ss.innerHTML = "";
+  if (!jl.length) ss.appendChild(el("p", "ms", "Записей пока нет."));
+  jl.forEach((x, i) => {
+    const d = document.createElement("details"); d.open = i === 0;
+    d.appendChild(el("summary", "", "Сессия " + x.session_no + (x.title ? ": " + x.title : "")));
+    const t = el("div", "", x.summary); t.style.whiteSpace = "pre-wrap"; d.appendChild(t);
+    if (me.master) {
+      const del = el("button", "danger", "Удалить"); del.type = "button";
+      del.onclick = async () => { if (!confirm("Удалить запись о сессии " + x.session_no + "?")) return; const { error } = await db.from("session_log").delete().eq("id", x.id); if (error) jmsg("Не удалось удалить."); else loadJournal(); };
+      d.appendChild(del);
+    }
+    ss.appendChild(d);
+  });
+  const qs = $("jQuests"); qs.innerHTML = "";
+  if (!jq.length) qs.appendChild(el("p", "ms", me.master ? "Заданий пока нет." : "Мастер ещё не открыл заданий."));
+  [["story", "Сюжетные"], ["side", "Дополнительные"]].forEach(([k, label]) => {
+    const g = jq.filter(x => x.kind === k); if (!g.length) return;
+    qs.appendChild(el("p", "ms", label));
+    g.forEach(x => {
+      const box = el("div", "ab", x.title + " — " + QST[x.status] + (me.master && !x.visible ? " (скрыто от игроков)" : ""));
+      if (x.body) { const t = el("small", "", x.body); t.style.whiteSpace = "pre-wrap"; box.appendChild(t); }
+      if (me.master) {
+        const r = el("div", "row"), st = el("select"); st.setAttribute("aria-label", "Статус: " + x.title);
+        Object.entries(QST).forEach(([v, n]) => { const o = el("option", "", n); o.value = v; st.appendChild(o); }); st.value = x.status;
+        st.onchange = async () => { const { error } = await db.from("quests").update({status: st.value}).eq("id", x.id); if (error) jmsg("Не удалось сменить статус."); else loadJournal(); };
+        const vis = el("button", "", x.visible ? "Скрыть от игроков" : "Показать игрокам"); vis.type = "button";
+        vis.onclick = async () => { const { error } = await db.from("quests").update({visible: !x.visible}).eq("id", x.id); if (error) jmsg("Не удалось изменить."); else loadJournal(); };
+        const del = el("button", "danger", "Удалить"); del.type = "button";
+        del.onclick = async () => { if (!confirm("Удалить задание «" + x.title + "»?")) return; const { error } = await db.from("quests").delete().eq("id", x.id); if (error) jmsg("Не удалось удалить."); else loadJournal(); };
+        r.append(st, vis, del); box.appendChild(r);
+      }
+      qs.appendChild(box);
+    });
+  });
+}
+$("sessForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const { error } = await db.from("session_log").insert({session_no: +$("sNo").value, title: $("sTitle").value.trim(), summary: $("sText").value});
+  if (error) { jmsg("Не удалось записать."); return; }
+  $("sessForm").reset(); await loadJournal(); jmsg("Записано.", true);
+});
+$("qForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const { error } = await db.from("quests").insert({title: $("qTitle").value.trim(), body: $("qBody").value, kind: $("qKind").value, visible: $("qVis").checked});
+  if (error) { jmsg("Не удалось добавить. Мастеру: выполнен ли supabase_journal.sql?"); return; }
+  $("qForm").reset(); await loadJournal(); jmsg("Задание добавлено.", true);
+});
+$("jNotes").addEventListener("input", () => { $("jNotes").dataset.dirty = "1"; });
+$("jNotesSave").onclick = async () => {
+  const { error } = await db.from("player_notes").upsert({owner: me.id, body: $("jNotes").value, updated_at: new Date().toISOString()}, {onConflict: "owner"});
+  if (error) jmsg("Не удалось сохранить заметки."); else { delete $("jNotes").dataset.dirty; jmsg("Заметки сохранены.", true); }
+};
+
+// ---- Зоны внимания: мастер ставит зону со сложностью, при входе токена сервер сравнивает пассивную Внимательность
+const toast = (txt, add) => {
+  const b = $("toast");
+  if (add && !b.hidden) b.textContent += "\n" + txt; else b.textContent = txt;
+  b.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { b.hidden = true; }, 9000);
+};
+$("toast").onclick = () => { $("toast").hidden = true; };
+
+async function zoneClick(e) {
+  const x = Math.round(e.latlng.lng), y = Math.round(dims.h - e.latlng.lat);
+  if (x < 0 || y < 0 || x > dims.w || y > dims.h) return;
+  const radius = Math.round(Math.max(dims.w, dims.h) / {s: 60, m: 30, l: 15}[$("zoSize").value]);
+  const dc = Math.min(30, Math.max(1, Math.round(+$("zoDc").value) || 13));
+  const { error } = await db.from("perception_zones").insert({scene_id: scn.id, name: "Зона внимания " + (zones.length + 1), x, y, radius, dc, note: $("zoNote").value.trim()});
+  if (error) mmsg("Не удалось поставить зону. Мастеру: выполнен ли supabase_zones.sql?"); else { $("zoNote").value = ""; loadSceneObjects(); }
+}
+function zonePopup(z) {
+  const box = el("div"); L.DomEvent.disableClickPropagation(box); L.DomEvent.on(box, "keydown keypress keyup", L.DomEvent.stopPropagation);
+  const name = el("input"); name.value = z.name; name.maxLength = 60; name.setAttribute("aria-label", "Название зоны");
+  const dc = el("input"); dc.type = "number"; dc.min = 1; dc.max = 30; dc.value = z.dc; dc.setAttribute("aria-label", "Сложность");
+  const rad = el("input"); rad.type = "number"; rad.min = 1; rad.value = Math.round(z.radius); rad.setAttribute("aria-label", "Радиус");
+  const note = el("textarea"); note.value = z.note; note.maxLength = 500; note.style.minHeight = "70px"; note.setAttribute("aria-label", "Что заметят");
+  const en = el("input"); en.type = "checkbox"; en.checked = z.enabled; en.style.cssText = "display:inline;width:auto;margin:0 .4rem 0 0";
+  const el1 = el("label"); el1.append(en, "Включена");
+  const save = el("button", "", "Сохранить"), reset = el("button", "", "Сбросить замеченное"), del = el("button", "danger", "Удалить"); save.type = reset.type = del.type = "button";
+  save.onclick = async () => {
+    const { error } = await db.from("perception_zones").update({name: name.value.trim() || "Зона внимания", dc: Math.min(30, Math.max(1, Math.round(+dc.value) || 13)), radius: Math.max(1, Math.round(+rad.value) || 1), note: note.value, enabled: en.checked}).eq("id", z.id);
+    if (error) mmsg("Не удалось сохранить зону."); else loadSceneObjects();
+  };
+  reset.onclick = async () => {
+    const { error } = await db.from("zone_notices").delete().eq("zone_id", z.id);
+    if (error) mmsg("Не удалось сбросить."); else { mmsg("Результаты сброшены: зона сработает снова при входе.", true); loadZoneNotices(); }
+  };
+  del.onclick = async () => {
+    if (!confirm("Удалить зону «" + z.name + "» вместе с результатами проверок?")) return;
+    const { error } = await db.from("perception_zones").delete().eq("id", z.id);
+    if (error) mmsg("Не удалось удалить зону."); else loadSceneObjects();
+  };
+  const r = el("div", "row"); r.append(save, reset, del);
+  box.append(name, el("small", "", "Сложность (СЛ)"), dc, el("small", "", "Радиус"), rad, note, el1, r); return box;
+}
+function drawZones(list) {
+  zoL.forEach(l => l.remove()); zoL = []; zones = list;
+  if (!me.master) return;
+  list.forEach(z => {
+    const c = L.circle(ll(z.x, z.y), {radius: z.radius, color: z.enabled ? "#7fb6d4" : "#5b6d75", weight: 2, dashArray: "6 6", fillOpacity: .08, bubblingMouseEvents: true}).addTo(map);
+    c.bindTooltip("СЛ " + z.dc + " · " + z.name, {sticky: true});
+    c.bindPopup(() => zonePopup(z));
+    c.on("click", () => { if (fxMode || rmMode || foMode || fcMode || poMode || zoMode) c.closePopup(); });
+    zoL.push(c);
+  });
+}
+async function loadZoneNotices() {
+  const r = await db.from("zone_notices").select("id,zone_name,char_name,passive,dc,noticed,message,created_at").order("created_at", {ascending: false}).limit(20);
+  if (r.error || !me) return;
+  const M = me.master, box = M ? $("zoLog") : $("zoSeen"); box.innerHTML = "";
+  $("zoLogBox").hidden = !(M && r.data.length); $("zoSeenBox").hidden = !(!M && r.data.length);
+  r.data.forEach(n => {
+    const d = el("div", "ms");
+    d.textContent = M ? new Date(n.created_at).toLocaleTimeString("ru", {hour: "2-digit", minute: "2-digit"}) + " · " + n.zone_name + ": " + n.char_name + " — " + (n.noticed ? "заметил" : "не заметил") + " (пассивная " + n.passive + " против " + n.dc + ")"
+      : n.char_name + ": " + (n.message || "что-то необычное");
+    box.appendChild(d);
+  });
+}
+function onZoneEvent(p) {
+  loadZoneNotices();
+  if (p.eventType !== "INSERT" || !p.new || !me) return;
+  if (me.master) toast("Зона «" + p.new.zone_name + "»: " + p.new.char_name + (p.new.noticed ? " заметил" : " не заметил") + " (пассивная " + p.new.passive + " против " + p.new.dc + ")", true);
+  else if (p.new.noticed) toast(p.new.char_name + " заметил: " + (p.new.message || "что-то необычное"));
+}
+
+// ---- Бой: очередь инициативы, ход виден всем
+let combat = null, cmb = [];
+const cmsg = (t, ok) => { $("cbMsg").textContent = t; $("cbMsg").className = "msg" + (ok ? " good" : ""); };
+const pingCombat = () => { if (chan) chan.send({type: "broadcast", event: "combat", payload: {}}); };
+const onCombatEvent = () => { loadCombat(); if (me && !me.master && $("combatView").hidden) flag("combat", true); };
+const orderC = () => [...cmb].sort((a, b) => (b.initiative == null ? -999 : b.initiative) - (a.initiative == null ? -999 : a.initiative) || b.bonus - a.bonus || a.created_at.localeCompare(b.created_at));
+const mineC = c => !!(c && c.character_id && me && (chars || []).some(x => x.id === c.character_id && x.owner === me.id));
+
+async function loadCombat() {
+  const a = await db.from("combats").select("id,scene_id,round,current_id").limit(1);
+  if (a.error) { cmsg("Бой недоступен. Мастеру: выполните supabase_combat.sql."); return; }
+  combat = a.data[0] || null; cmb = [];
+  if (combat) {
+    const b = await db.from("combatants").select("id,name,character_id,initiative,bonus,hidden,defeated,created_at").eq("combat_id", combat.id);
+    if (!b.error) cmb = b.data;
+  }
+  renderCombat();
+}
+async function cmut(q) {
+  const { error } = await q;
+  if (error) { cmsg("Не удалось выполнить действие."); return false; }
+  cmsg(""); await loadCombat(); pingCombat(); return true;
+}
+function nextState() { // кто ходит следом (пропуская выбывших) и какой раунд
+  const full = orderC().filter(c => c.initiative != null);
+  if (!full.some(c => !c.defeated)) return null;
+  let pos = full.findIndex(c => c.id === combat.current_id), round = combat.round;
+  if (round === 0) { pos = -1; round = 1; }
+  for (let k = 0; k < full.length; k++) {
+    pos++; if (pos >= full.length) { pos = 0; round++; }
+    if (!full[pos].defeated) return {round, current_id: full[pos].id};
+  }
+  return null;
+}
+async function rollInit(c) {
+  const { error } = await db.rpc("roll_initiative", {p_combatant: c.id, p_mode: "normal"});
+  if (error) { cmsg("Бросок не удался."); return; }
+  cmsg(""); await loadCombat(); pingCombat();
+}
+function renderCombat() {
+  const M = !!(me && me.master), list = $("cbList"); list.innerHTML = "";
+  const ord = orderC(), cur = combat ? ord.find(c => c.id === combat.current_id) : null;
+  const myTurn = !!(combat && combat.round > 0 && mineC(cur));
+  $("tabCombat").textContent = myTurn ? "Бой: ваш ход!" : combat ? "Бой (идёт)" : "Бой";
+  { const cd = document.querySelector('#dock [data-tab="combat"]'); if (cd) { cd.textContent = myTurn ? "Ваш ход!" : combat ? "Бой (идёт)" : "Бой"; cd.classList.toggle("new", myTurn); } }
+  $("cbState").textContent = !combat ? "Сейчас боя нет." : combat.round === 0 ? "Сбор инициативы." : "Раунд " + combat.round + " · ходит: " + (cur ? cur.name : "противники");
+  $("cbMaster").hidden = !M; $("cbNpc").hidden = !(M && combat);
+  const main = $("cbMain"); main.innerHTML = "";
+  const btn = (txt, fn, cls) => { const b = el("button", cls || "", txt); b.type = "button"; b.onclick = fn; return b; };
+  if (M) {
+    if (!combat) {
+      main.appendChild(btn("Начать бой на открытой сцене", () => { const sc = scenes.find(s => s.is_current); cmut(db.from("combats").insert({scene_id: sc ? sc.id : null})); }));
+    } else {
+      main.appendChild(btn("Добавить партию", () => {
+        const rows = chars.filter(c => !cmb.some(x => x.character_id === c.id)).map(c => ({combat_id: combat.id, name: c.name, character_id: c.id}));
+        if (!rows.length) { cmsg("Вся партия уже в бою."); return; }
+        cmut(db.from("combatants").insert(rows));
+      }));
+      main.appendChild(btn("Бросить инициативу всем без значения", async () => {
+        const todo = cmb.filter(x => x.initiative == null); if (!todo.length) { cmsg("У всех уже есть инициатива."); return; }
+        for (const c of todo) { const { error } = await db.rpc("roll_initiative", {p_combatant: c.id, p_mode: "normal"}); if (error) { cmsg("Бросок не удался."); break; } }
+        await loadCombat(); pingCombat();
+      }));
+      main.appendChild(btn(combat.round === 0 ? "Начать бой (раунд 1)" : "Следующий ход", () => {
+        const ns = nextState(); if (!ns) { cmsg("Нет участников с инициативой."); return; }
+        cmut(db.from("combats").update(ns).eq("id", combat.id));
+      }));
+      main.appendChild(btn("Завершить бой", () => { if (confirm("Завершить бой и убрать очередь?")) cmut(db.from("combats").delete().eq("id", combat.id)); }, "danger"));
+    }
+  }
+  if (combat && !ord.length) list.appendChild(el("p", "ms", M ? "Пока никого. Добавьте партию и противников." : "Участников пока нет."));
+  ord.forEach(c => {
+    const row = el("div", "cb" + (c.defeated ? " out" : ""));
+    if (combat.round > 0 && combat.current_id === c.id) row.setAttribute("aria-current", "true");
+    const nm = el("span", "n", c.name + (mineC(c) ? " (вы)" : "")); if (M && c.hidden) nm.appendChild(el("small", "", " · скрыт")); if (c.defeated) nm.appendChild(el("small", "", " · выбыл"));
+    row.appendChild(nm);
+    if (M) {
+      const ini = el("input", "num"); ini.type = "number"; ini.min = -20; ini.max = 60; ini.placeholder = "—"; ini.value = c.initiative == null ? "" : c.initiative; ini.setAttribute("aria-label", "Инициатива: " + c.name);
+      ini.onchange = () => cmut(db.from("combatants").update({initiative: ini.value === "" ? null : Math.max(-20, Math.min(60, Math.round(+ini.value) || 0))}).eq("id", c.id));
+      row.appendChild(ini);
+    } else row.appendChild(el("b", "", c.initiative == null ? "—" : String(c.initiative)));
+    if (M || (mineC(c) && c.initiative == null)) row.appendChild(btn(c.initiative == null ? "Бросить" : "Перебросить", () => rollInit(c)));
+    if (M) {
+      row.appendChild(btn(c.defeated ? "Вернуть" : "Выбыл", () => cmut(db.from("combatants").update({defeated: !c.defeated}).eq("id", c.id))));
+      if (!c.character_id) row.appendChild(btn(c.hidden ? "Показать" : "Скрыть", () => cmut(db.from("combatants").update({hidden: !c.hidden}).eq("id", c.id))));
+      row.appendChild(btn("Убрать", async () => {
+        if (combat.round > 0 && combat.current_id === c.id) {
+          const ns = nextState();
+          await db.from("combats").update(ns && ns.current_id !== c.id ? ns : {current_id: null}).eq("id", combat.id);
+        }
+        cmut(db.from("combatants").delete().eq("id", c.id));
+      }, "danger"));
+    }
+    list.appendChild(row);
+  });
+}
+$("cbAdd").onclick = () => {
+  const name = $("cbName").value.trim(); if (!name || !combat) { cmsg("Укажите название противника."); return; }
+  const n = Math.min(10, Math.max(1, Math.round(+$("cbCnt").value) || 1)), bonus = Math.min(20, Math.max(-10, Math.round(+$("cbBon").value) || 0));
+  const rows = Array.from({length: n}, (_, i) => ({combat_id: combat.id, name: n > 1 ? name + " " + (i + 1) : name, bonus, hidden: $("cbHid").checked}));
+  cmut(db.from("combatants").insert(rows)).then(ok => { if (ok) $("cbName").value = ""; });
+};
+
+// ---- Броски: кубики кидает сервер (функция roll_dice), журнал общий
+let rolls = [];
+const rmsg = (t, ok) => { $("rollMsg").textContent = t; $("rollMsg").className = "msg" + (ok ? " good" : ""); };
+const DICE = {
+  4: "<path d='M24 7L43 39H5Z'/><path d='M24 7V39M24 7L36 30L5 39M36 30L43 39'/>",
+  6: "<path d='M24 6L40 15V33L24 42L8 33V15Z'/><path d='M24 24L8 15M24 24L40 15M24 24V42'/>",
+  8: "<path d='M24 5L42 24L24 43L6 24Z'/><path d='M6 24H42M15 24L24 5M33 24L24 5'/>",
+  10: "<path d='M24 5L42 20L24 43L6 20Z'/><path d='M24 5V43M6 20L24 27L42 20'/>",
+  12: "<path d='M24 6L41 18L35 38H13L7 18Z'/><path d='M24 17L32 23L29 32H19L16 23Z'/><path d='M24 6V17M41 18L32 23M35 38L29 32M13 38L19 32M7 18L16 23'/>",
+  20: "<path d='M24 5L41 15V33L24 43L7 33V15Z'/><path d='M24 14L33 30H15Z'/><path d='M24 5V14M41 15L33 30M24 43L33 30M24 43L15 30M7 15L15 30M7 33L15 30M41 33L33 30'/>",
+  100: "<path d='M15 7L25 17L15 31L5 17Z'/><path d='M33 17L43 27L33 41L23 27Z'/>"
+};
+let rMode = "normal";
+[4, 6, 8, 10, 12, 20, 100].forEach(s => {
+  const b = el("button"); b.type = "button"; b.title = "d" + s; b.setAttribute("aria-label", "d" + s);
+  b.innerHTML = '<svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">' + DICE[s] + "</svg><small>d" + s + "</small>";
+  b.onclick = () => doRoll(1, s, 0, s === 20 ? rMode : "normal"); $("dice").appendChild(b);
+});
+{ const mb = el("button", "", "Обычный бросок"); mb.type = "button"; mb.id = "rModeBtn"; mb.title = "Режим для d20: обычный, с преимуществом, с помехой";
+  const names = {normal: "Обычный бросок", adv: "Преимущество", dis: "Помеха"}, next = {normal: "adv", adv: "dis", dis: "normal"};
+  mb.onclick = () => { rMode = next[rMode]; mb.textContent = names[rMode]; mb.setAttribute("aria-pressed", rMode !== "normal"); };
+  $("dice").appendChild(mb); }
+function parseFm(s) {
+  const m = /^\s*(\d*)\s*d\s*(\d+)\s*(?:k([hl])\s*(\d+)?)?\s*([+-]\s*\d+)?\s*$/i.exec(s || "");
+  if (!m) return null;
+  let count = m[1] ? +m[1] : 1; const sides = +m[2], mod = m[5] ? +m[5].replace(/\s/g, "") : 0; let mode = "normal";
+  if (m[3]) {
+    if (sides === 20 && count === 2 && (m[4] ? +m[4] : 1) === 1) { mode = m[3].toLowerCase() === "h" ? "adv" : "dis"; count = 1; }
+    else return {err: "Лучший или худший кубик берётся только так: 2d20kh1 или 2d20kl1."};
+  }
+  if (![4, 6, 8, 10, 12, 20, 100].includes(sides) || count < 1 || count > 20) return {err: "Кубик: d4, d6, d8, d10, d12, d20 или d100, не больше 20 штук."};
+  return {count, sides, mod, mode};
+}
+$("fmForm").onsubmit = e => {
+  e.preventDefault(); const p = parseFm($("fm").value);
+  if (!p) { rmsg("Не понял формулу. Примеры: 2d6+3, d20, 2d20kh1."); return; }
+  if (p.err) { rmsg(p.err); return; }
+  doRoll(p.count, p.sides, p.mod, p.mode);
+};
+
+function fillRollChars() {
+  const s = $("rC"), keep = s.value; s.innerHTML = "";
+  const o0 = el("option", "", me && me.master ? "без персонажа" : "от своего имени"); o0.value = ""; s.appendChild(o0);
+  (chars || []).filter(c => me && (me.master || c.owner === me.id)).forEach(c => { const o = el("option", "", c.name); o.value = c.id; s.appendChild(o); });
+  s.value = keep;
+}
+async function doRoll(count, sides, mod, mode) {
+  rmsg("");
+  const { error } = await db.rpc("roll_dice", {p_label: "", p_count: count, p_sides: sides, p_mod: Math.max(-100, Math.min(100, mod)), p_mode: mode, p_hidden: !!(me.master && $("rH").checked), p_character: $("rC").value || null});
+  if (error) rmsg("Бросок не удался. Мастеру: выполнен ли supabase_rolls.sql?"); else loadRolls();
+}
+async function loadRolls() {
+  const { data, error } = await db.from("rolls").select("id,who,char_name,label,sides,count,modifier,mode,dice,kept,total,hidden,created_at").order("created_at", {ascending: false}).limit(50);
+  if (error) { rmsg("Журнал бросков недоступен. Мастеру: выполните supabase_rolls.sql."); return; }
+  rolls = data; renderRolls();
+}
+function rollText(r) {
+  const sign = r.modifier > 0 ? " + " + r.modifier : r.modifier < 0 ? " − " + Math.abs(r.modifier) : "";
+  if (r.mode !== "normal") return "d20 с " + (r.mode === "adv" ? "преимуществом" : "помехой") + ": [" + r.dice.join(", ") + "] → " + r.kept[0] + sign + " = ";
+  return r.count + "d" + r.sides + sign + ": [" + r.dice.join(", ") + "] = ";
+}
+function renderRolls() {
+  const box = $("rollLog"); box.innerHTML = "";
+  if (!rolls.length) { box.appendChild(el("p", "ms", "Бросков пока не было.")); return; }
+  rolls.forEach(r => {
+    const row = el("div", "rolli");
+    const head = el("div", "", ""); head.appendChild(el("b", "", r.char_name ? r.char_name + " (" + r.who + ")" : (r.who || "Кто-то")));
+    if (r.label) head.append(" · " + r.label);
+    if (r.hidden) head.appendChild(el("span", "tag", " · скрытый"));
+    const t = el("small", "", " " + new Date(r.created_at).toLocaleTimeString("ru", {hour: "2-digit", minute: "2-digit"})); head.appendChild(t);
+    const line = el("div", "", rollText(r));
+    const single20 = r.sides === 20 && r.count === 1;
+    const tot = el("b", single20 && r.kept[0] === 20 ? "crit" : single20 && r.kept[0] === 1 ? "fail" : "", String(r.total));
+    line.appendChild(tot);
+    if (single20 && r.kept[0] === 20) line.append(" · критическая удача");
+    if (single20 && r.kept[0] === 1) line.append(" · критический провал");
+    row.append(head, line); box.appendChild(row);
+  });
+}
+$("rClear").onclick = async () => {
+  if (!confirm("Очистить весь журнал бросков?")) return;
+  const { error } = await db.from("rolls").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) rmsg("Не удалось очистить."); else loadRolls();
+};
+
+// ---- Импровизация: кубики и таблицы случайного выбора (без ИИ)
+let rt = [], rtEditing = null, rtLast = {}, diceLog = [], rtLog = [];
+const impmsg = (t, ok) => { $("impMsg").textContent = t; $("impMsg").className = "msg" + (ok ? " good" : ""); };
+const rnd = n => { const lim = Math.floor(4294967296 / n) * n, a = new Uint32Array(1); do crypto.getRandomValues(a); while (a[0] >= lim); return a[0] % n + 1; };
+
+$("dRoll").onclick = () => {
+  const n = Math.min(20, Math.max(1, +$("dN").value || 1)), s = +$("dS").value, m = Math.round(+$("dM").value) || 0, mode = $("dA").value;
+  let txt, total, nat = "";
+  if (mode && s === 20 && n === 1) {
+    const a = rnd(20), b = rnd(20), p = mode === "adv" ? Math.max(a, b) : Math.min(a, b);
+    total = p + m; txt = (mode === "adv" ? "преимущество" : "помеха") + " d20: " + a + " и " + b + " → " + p;
+    nat = p === 20 ? " (натуральная 20)" : p === 1 ? " (натуральная 1)" : "";
+  } else {
+    const r = Array.from({length: n}, () => rnd(s)); total = r.reduce((x, y) => x + y, 0) + m; txt = n + "d" + s + ": " + r.join(" + ");
+    if (n === 1 && s === 20) nat = r[0] === 20 ? " (натуральная 20)" : r[0] === 1 ? " (натуральная 1)" : "";
+  }
+  if (m) txt += (m > 0 ? " + " : " − ") + Math.abs(m);
+  $("dOut").textContent = total + nat;
+  diceLog.unshift(txt + " = " + total); diceLog = diceLog.slice(0, 8);
+  $("dLog").innerHTML = ""; diceLog.forEach(l => $("dLog").appendChild(el("div", "", l)));
+};
+
+async function loadTables() {
+  const { data, error } = await db.from("random_tables").select("id,name,category,entries").order("category").order("name");
+  if (error) { impmsg("Таблицы недоступны. Мастеру: выполните supabase_improv.sql."); return; }
+  rt = data; impmsg(""); renderTables();
+}
+function renderTables(keepId) {
+  const sel = $("rtSel"), keep = keepId || sel.value; sel.innerHTML = "";
+  rt.forEach(t => { const o = el("option", "", t.category + " · " + t.name); o.value = t.id; sel.appendChild(o); });
+  if (rt.some(t => t.id === keep)) sel.value = keep;
+  $("rtForm").hidden = rtEditing === null;
+  $("rtRoll").disabled = $("rtEdit").disabled = !rt.length;
+}
+const rtLines = t => t.entries.split("\n").map(x => x.trim()).filter(Boolean);
+$("rtRoll").onclick = () => {
+  const t = rt.find(x => x.id === $("rtSel").value); if (!t) return;
+  const L = rtLines(t); if (!L.length) { $("rtOut").textContent = "В таблице нет вариантов."; return; }
+  let i; do i = rnd(L.length) - 1; while (L.length > 1 && i === rtLast[t.id]);
+  rtLast[t.id] = i; $("rtOut").textContent = L[i];
+  rtLog.unshift(t.name + ": " + L[i]); rtLog = rtLog.slice(0, 6);
+  $("rtLog").innerHTML = ""; rtLog.forEach(l => $("rtLog").appendChild(el("div", "", l)));
+};
+function openRtForm(t) {
+  rtEditing = t || {}; $("rtName").value = t ? t.name : ""; $("rtCat").value = t ? t.category : "Общее";
+  $("rtEntries").value = t ? t.entries : ""; $("rtDel").hidden = !t; renderTables(); $("rtName").focus();
+}
+$("rtNew").onclick = () => openRtForm(null);
+$("rtEdit").onclick = () => { const t = rt.find(x => x.id === $("rtSel").value); if (t) openRtForm(t); };
+$("rtCancel").onclick = () => { rtEditing = null; renderTables(); };
+$("rtForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const row = {name: $("rtName").value.trim(), category: $("rtCat").value.trim() || "Общее", entries: $("rtEntries").value};
+  const q = rtEditing && rtEditing.id ? db.from("random_tables").update(row).eq("id", rtEditing.id).select("id").single() : db.from("random_tables").insert(row).select("id").single();
+  const { data, error } = await q;
+  if (error) { impmsg("Не удалось сохранить."); return; }
+  rtEditing = null; await loadTables(); renderTables(data.id); impmsg("Сохранено.", true);
+});
+$("rtDel").onclick = async () => {
+  if (!rtEditing || !rtEditing.id || !confirm("Удалить таблицу «" + rtEditing.name + "»?")) return;
+  const { error } = await db.from("random_tables").delete().eq("id", rtEditing.id);
+  if (error) { impmsg("Не удалось удалить."); return; }
+  rtEditing = null; await loadTables(); impmsg("Удалено.", true);
+};
+
+// ---- Точки интереса: ставит мастер, игрок читает карточку; правка прямо в карточке
+const POI = {
+  lighthouse: {icon: "🗼", label: "Маяк"}, outpost: {icon: "☠️", label: "Аванпост пиратов"},
+  druid_altar: {icon: "🌿", label: "Алтарь друидов"}, dark_altar: {icon: "🌑", label: "Алтарь тёмных магов"},
+  black_market: {icon: "💰", label: "Чёрный рынок"}, mine: {icon: "⛏️", label: "Шахта"},
+  ruins: {icon: "🏛️", label: "Разрушенный храм"}, other: {icon: "📍", label: "Другое"}};
+Object.entries(POI).forEach(([v, o]) => { const op = el("option", "", o.icon + " " + o.label); op.value = v; $("poKind").appendChild(op); });
+$("poBtn").onclick = () => setMode(poMode ? "" : "po");
+$("zoBtn").onclick = () => setMode(zoMode ? "" : "zo");
+
+async function poiClick(e) {
+  const x = Math.round(e.latlng.lng), y = Math.round(dims.h - e.latlng.lat), kind = $("poKind").value;
+  if (x < 0 || y < 0 || x > dims.w || y > dims.h) return;
+  const name = prompt("Название точки", POI[kind].label);
+  if (name === null || !name.trim()) return;
+  const { error } = await db.from("map_points").insert({scene_id: scn.id, kind, name: name.trim(), x, y, note: "", visible: false});
+  if (error) mmsg("Не удалось поставить точку. Мастеру: выполнен ли supabase_poi.sql?"); else loadSceneObjects();
+}
+
+// Когда точка становится скрытой, база не присылает игроку событие (строка ему больше не видна), поэтому мастер шлёт отдельный сигнал.
+const pingPoi = () => { if (chan) chan.send({type: "broadcast", event: "poi", payload: {}}); };
+
+function poiPopup(p) {
+  const k = POI[p.kind] || POI.other, box = el("div");
+  L.DomEvent.disableClickPropagation(box); L.DomEvent.on(box, "keydown keypress keyup", L.DomEvent.stopPropagation);
+  if (!me.master) {
+    box.appendChild(el("b", "", k.icon + " " + p.name)); box.appendChild(el("div", "", k.label));
+    if (p.note) { const n = el("div", "", p.note); n.style.whiteSpace = "pre-wrap"; box.appendChild(n); }
+    return box;
+  }
+  const name = el("input"); name.value = p.name; name.maxLength = 80; name.setAttribute("aria-label", "Название");
+  const kind = el("select"); kind.setAttribute("aria-label", "Тип");
+  Object.entries(POI).forEach(([v, o]) => { const op = el("option", "", o.label); op.value = v; kind.appendChild(op); }); kind.value = POI[p.kind] ? p.kind : "other";
+  const note = el("textarea"); note.value = p.note; note.setAttribute("aria-label", "Описание для игроков"); note.style.minHeight = "70px";
+  const vis = el("input"); vis.type = "checkbox"; vis.checked = p.visible; vis.style.cssText = "display:inline;width:auto;margin:0 .4rem 0 0";
+  const vl = el("label"); vl.append(vis, "Видна игрокам");
+  const save = el("button", "", "Сохранить"), del = el("button", "danger", "Удалить"); save.type = del.type = "button";
+  save.onclick = async () => {
+    const { error } = await db.from("map_points").update({name: name.value.trim() || k.label, kind: kind.value, note: note.value, visible: vis.checked}).eq("id", p.id);
+    if (error) mmsg("Не удалось сохранить точку."); else { loadSceneObjects(); pingPoi(); }
+  };
+  del.onclick = async () => {
+    if (!confirm("Удалить точку «" + p.name + "»?")) return;
+    const { error } = await db.from("map_points").delete().eq("id", p.id);
+    if (error) mmsg("Не удалось удалить точку."); else loadSceneObjects();
+  };
+  const r = el("div", "row"); r.append(save, del);
+  box.append(name, kind, note, vl, r); return box;
+}
+
+function drawPois(list) {
+  const ids = new Set(list.map(p => p.id));
+  Object.keys(poiM).forEach(id => { if (!ids.has(id)) { poiM[id].remove(); delete poiM[id]; } });
+  list.forEach(p => {
+    const sig = JSON.stringify([p.name, p.kind, p.note, p.visible, p.x, p.y]);
+    if (poiM[p.id] && poiM[p.id]._sig === sig) return;
+    if (poiM[p.id]) poiM[p.id].remove();
+    const k = POI[p.kind] || POI.other;
+    const icon = L.divIcon({html: el("div", "poi" + (p.visible ? "" : " off"), k.icon), className: "", iconSize: [26, 26], iconAnchor: [13, 13]});
+    const m = L.marker(ll(p.x, p.y), {icon, keyboard: false, zIndexOffset: -50, bubblingMouseEvents: true}).addTo(map);
+    m._sig = sig; m.bindTooltip(p.name, {direction: "top", offset: [0, -10]});
+    m.bindPopup(() => poiPopup(p));
+    m.on("click", () => { if (fxMode || rmMode || foMode || fcMode || poMode || zoMode) m.closePopup(); });
+    poiM[p.id] = m;
+  });
+  refreshFog();
+}
+
+// ---- Отдых: совместное решение игроков (короткий и длительный), лагерь как отдельная сцена
+const baseTitle = document.title;
+let rest = null, restWho = "", campId = null;
+const RK = {short: "короткий", long: "длительный"};
+const mk = (t, fn, cls) => { const b = el("button", cls || "", t); b.type = "button"; b.onclick = fn; return b; };
+const restErr = t => { const s = el("span", "", t); s.style.color = "var(--bad)"; $("restBar").appendChild(s); };
+
+async function loadRest() {
+  const r = await db.from("rests").select("id,kind,status,proposed_by,votes,voters").in("status", ["voting", "accepted", "camp"]).order("created_at", {ascending: false}).limit(1);
+  if (r.error) { rest = null; $("restBar").hidden = true; return; } // таблицы ещё нет: полоса скрыта
+  rest = r.data[0] || null; restWho = "";
+  if (rest && rest.proposed_by) { const p = await db.from("profiles").select("display_name").eq("id", rest.proposed_by).maybeSingle(); restWho = p.data ? p.data.display_name : "Кто-то"; }
+  if (me.master) {
+    const st = await db.from("settings").select("key,value").in("key", ["camp_scene", "rest_threshold"]);
+    (st.data || []).forEach(x => { if (x.key === "camp_scene") campId = x.value && x.value.id; if (x.key === "rest_threshold" && x.value) $("restPct").value = x.value.pct; });
+    fillCampSel();
+  }
+  renderRest();
+}
+function fillCampSel() {
+  if (!me || !me.master) return;
+  const sel = $("campSel"); sel.innerHTML = "";
+  const none = el("option", "", "не выбрана"); none.value = ""; sel.appendChild(none);
+  (typeof scenes !== "undefined" ? scenes : []).forEach(sc => { const o = el("option", "", sc.name); o.value = sc.id; sel.appendChild(o); });
+  sel.value = campId || "";
+}
+$("campSel").onchange = async () => { campId = $("campSel").value || null; await db.from("settings").upsert({key: "camp_scene", value: {id: campId}}, {onConflict: "key"}); };
+$("restPct").onchange = async () => {
+  const pct = Math.min(100, Math.max(1, Math.round(+$("restPct").value) || 100)); $("restPct").value = pct;
+  await db.from("settings").upsert({key: "rest_threshold", value: {pct}}, {onConflict: "key"});
+};
+
+function renderRest() {
+  const bar = $("restBar"); bar.innerHTML = ""; bar.hidden = false; document.title = baseTitle;
+  if (!rest) {
+    bar.className = "idle";
+    bar.append("Отдых:", mk("Короткий", () => proposeRest("short")), mk("Длительный", () => proposeRest("long")));
+    return;
+  }
+  bar.className = "live";
+  const voters = rest.voters || [], votes = rest.votes || {}, a = Object.values(votes).filter(v => v === true).length, mine = votes[me.id];
+  if (rest.status === "voting") {
+    document.title = "⚑ Отдых: нужен голос · " + baseTitle;
+    bar.append(restWho + " предлагает " + RK[rest.kind] + " отдых. За: " + a + " из " + voters.length + ".");
+    if (voters.includes(me.id) && mine === undefined) bar.append(mk("Согласен", () => voteRest(true)), mk("Не сейчас", () => voteRest(false)));
+    else if (voters.includes(me.id)) bar.append("Ваш голос: " + (mine ? "за" : "против") + ".");
+    if (me.master) bar.append(mk("Принять без остальных", () => setRestStatus("accepted")));
+    if (rest.proposed_by === me.id || me.master) bar.append(mk("Отменить", cancelRest, "danger"));
+  } else if (rest.status === "accepted") {
+    bar.append("Решено: " + RK[rest.kind] + " отдых.");
+    if (me.master) bar.append(mk(campId ? "Перейти в лагерь" : "Отдыхаем на месте", goCamp));
+    else bar.append("Мастер ведёт партию в лагерь.");
+  } else {
+    bar.append("Лагерь: идёт " + RK[rest.kind] + " отдых.");
+    if (me.master) bar.append(mk("Завершить отдых", endRest));
+  }
+}
+async function proposeRest(kind) {
+  const { error } = await db.rpc("propose_rest", {p_kind: kind});
+  if (error) { renderRest(); restErr(error.message.includes("already") ? "Отдых уже предложен." : "Не получилось предложить отдых."); } else loadRest();
+}
+async function voteRest(agree) {
+  const { error } = await db.rpc("vote_rest", {p_id: rest.id, p_agree: agree});
+  if (error) { renderRest(); restErr("Не получилось проголосовать."); } else loadRest();
+}
+async function cancelRest() { await db.rpc("cancel_rest", {p_id: rest.id}); loadRest(); }
+async function setRestStatus(st) {
+  const done = st === "done" || st === "cancelled";
+  const { error } = await db.from("rests").update({status: st, closed_at: done ? new Date().toISOString() : null}).eq("id", rest.id);
+  if (error) restErr("Не удалось обновить отдых."); else loadRest();
+}
+async function goCamp() {
+  if (campId && scn && scn.id !== campId) await db.from("settings").upsert({key: "rest_return", value: {scene_id: scn.id}}, {onConflict: "key"});
+  if (campId) {
+    const { error } = await db.rpc("set_current_scene", {p_id: campId});
+    if (error) { renderRest(); restErr("Не удалось открыть сцену лагеря."); return; }
+    loadScenes();
+  }
+  setRestStatus("camp");
+}
+async function endRest() {
+  const r = await db.from("settings").select("value").eq("key", "rest_return").maybeSingle();
+  const id = r.data && r.data.value && r.data.value.scene_id;
+  if (id) { await db.rpc("set_current_scene", {p_id: id}); await db.from("settings").upsert({key: "rest_return", value: {scene_id: null}}, {onConflict: "key"}); loadScenes(); }
+  setRestStatus("done");
+}
+
+// ---- Копия данных: мастер скачивает все таблицы одним файлом (файлы картинок и звуков в копию не входят)
+$("backupBtn").onclick = async () => {
+  const T = ["profiles","characters","character_progress","scenes","tokens","effects","fog_zones","settings","session_log","map_points","sounds","glossary","quests","random_tables","rests","player_notes"];
+  const out = {saved_at: new Date().toISOString(), tables: {}}; let n = 0;
+  for (const t of T) { const r = await db.from(t).select("*"); if (!r.error) { out.tables[t] = r.data; n++; } }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], {type: "application/json"}));
+  a.download = "dnd-backup-" + out.saved_at.slice(0, 10) + ".json";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  mmsg("Копия скачана, таблиц: " + n + ".");
+};
+
+// ---- Вход и выход
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("loginBtn").disabled = true; $("loginMsg").textContent = "";
+  const { error } = await db.auth.signInWithPassword({email: $("email").value.trim(), password: $("pass").value});
+  if (error) {
+    $("loginMsg").textContent = error.status === 400 ? "Неверная почта или пароль." : "Не получилось войти. Попробуйте ещё раз.";
+    $("loginBtn").disabled = false;
+  }
+});
+$("logout").addEventListener("click", () => db.auth.signOut());
+
+db.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT" || !session) setTimeout(showLogin, 0);
+  else if (event === "INITIAL_SESSION" || event === "SIGNED_IN") setTimeout(() => showApp(session), 0);
+});
+// ---- Дизайн v2: бегущая строка, выезжающее меню, закрытие панелей, кнопки на карте, сворачиваемая панель карты
+(() => {
+  const hd = document.querySelector("#app header"), tabs = document.querySelector(".tabs");
+  const burger = document.createElement("button"); burger.id = "burger"; burger.type = "button"; burger.textContent = "Меню"; burger.setAttribute("aria-expanded", "false"); burger.setAttribute("aria-controls", "tabsNav");
+  tabs.id = "tabsNav"; hd.prepend(burger); document.body.appendChild(tabs);
+  const scrim = document.createElement("div"); scrim.id = "scrim"; document.body.appendChild(scrim);
+  const setMenu = on => { tabs.classList.toggle("open", on); scrim.classList.toggle("on", on); burger.setAttribute("aria-expanded", on); };
+  burger.onclick = () => setMenu(!tabs.classList.contains("open"));
+  scrim.onclick = () => setMenu(false);
+  tabs.addEventListener("click", e => { if (e.target.closest(".tab")) setMenu(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") setMenu(false); });
+  [["rollView", "rolls"], ["combatView", "combat"]].forEach(([id, name]) => {
+    const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "Закрыть"; x.onclick = () => tab(name); $(id).prepend(x);
+  });
+  const dock = document.createElement("div"); dock.id = "dock";
+  [["Кубики", "rolls"], ["Бой", "combat"]].forEach(([txt, name]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = txt; b.dataset.tab = name; b.onclick = () => tab(name); dock.appendChild(b); });
+  document.body.appendChild(dock);
+  const ab = document.createElement("button"); ab.id = "asideBtn"; ab.type = "button"; ab.textContent = "Панель";
+  ab.onclick = () => { $("mapView").classList.toggle("nopanel"); setTimeout(() => map && map.invalidateSize(), 400); };
+  $("mapView").prepend(ab);
 })();
 </script>
 </body>
