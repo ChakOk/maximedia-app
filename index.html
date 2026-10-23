@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Максимедиа — мини-приложение</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
@@ -84,7 +85,7 @@ nav.lock button:not(.on){opacity:.25;pointer-events:none}
 <script>
 // ===== НАСТРОЙКИ =====
 const CFG = {
-  makeWebhook: 'https://hook.eu2.make.com/l74bbei7qvrbaerivafqr96441t7axsy'   // URL вебхука Make. Пусто = демо-режим без сервера
+  apiUrl: ''   // адрес защитного прокси (Cloudflare Worker). Адрес вебхука Make сюда не вписывать. Пусто = демо-режим
 };
 const tg = window.Telegram && window.Telegram.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
@@ -126,7 +127,7 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 // Все запросы идут на один вебхук Make. Форма (не JSON) — чтобы браузер не делал предзапрос CORS.
 async function call(action,body={}){
   const msg={action,initData:tg?tg.initData:'',...body};
-  const r=await fetch(CFG.makeWebhook,{method:'POST',body:new URLSearchParams({payload:JSON.stringify(msg)})});
+  const r=await fetch(CFG.apiUrl,{method:'POST',body:new URLSearchParams({payload:JSON.stringify(msg)})});
   if(!r.ok) throw new Error('Ошибка '+r.status);
   const j=await r.json();
   if(j.error) throw new Error(j.error);
@@ -134,7 +135,7 @@ async function call(action,body={}){
 }
 let demoUsers=[{u:'@anna',s:'active'},{u:'@boris',s:'active'},{u:'@clara',s:'blocked'},{u:'@denis',s:'pending'}],demoMode='list',demoLim=100;
 async function adminApi(path,opt={}){
-  if(CFG.makeWebhook){
+  if(CFG.apiUrl){
     if(path==='/admin/stats') return call('admin_stats');
     if(path==='/admin/access') return call('admin_access',opt.body||{});
     if(path==='/admin/db') return call('admin_db');
@@ -145,7 +146,7 @@ async function adminApi(path,opt={}){
   if(path==='/admin/db') return {name:'Данные Медиаскопа',updated:'демо'};
 }
 async function send(command,data){
-  if(CFG.makeWebhook){
+  if(CFG.apiUrl){
     const r=await call('run',{command,data});
     if(!r.jobId) return r;                        // быстрые команды отвечают сразу
     for(let i=0;i<60;i++){                        // медиаплан: ждём результат, опрашивая каждые 4 сек
@@ -206,7 +207,7 @@ function fieldHTML([key,label,type,def]){
   return `<label>${label}</label><input name="${key}" type="${type}" value="${v}" inputmode="${type==='number'?'numeric':'text'}">`;
 }
 function renderRole(){
-  $('#rolebar').innerHTML=`<span>${esc(me.name||'гость')} · ${role==='admin'?'администратор':'пользователь'}</span>`+'<button id="clr" class="lnk">очистить историю</button>'+(!tg&&!CFG.makeWebhook?'<button id="swap" class="lnk">превью: сменить роль</button>':'');
+  $('#rolebar').innerHTML=`<span>${esc(me.name||'гость')} · ${role==='admin'?'администратор':'пользователь'}</span>`+'<button id="clr" class="lnk">очистить историю</button>'+(!tg&&!CFG.apiUrl?'<button id="swap" class="lnk">превью: сменить роль</button>':'');
 }
 function render(){
   loadStore();
@@ -380,7 +381,7 @@ document.addEventListener('click',async e=>{
   const hh=e.target.closest('[data-hist]'); if(hh&&!busy) return openHist(hh.dataset.hid,+hh.dataset.hist);
   if(e.target.id==='clr') return clearHistory();
   if(e.target.id==='chatsend'&&!busy) return chat();
-  if(e.target.id==='swap'){role=role==='admin'?'user':'admin';me.name=role==='admin'?'@matt_lum (демо)':'@user (демо)';return render();}
+  if(e.target.id==='swap'){role=role==='admin'?'user':'admin';me.name=role==='admin'?'@admin (демо)':'@user (демо)';return render();}
   const md=e.target.closest('[data-mode]'); if(md){await adminApi('/admin/access',{body:{mode:md.dataset.mode}});return loadAdmin('access');}
   if(e.target.id==='setlim'){const v=$('#lim').value.trim();if(v){await adminApi('/admin/access',{body:{limit:v}});loadAdmin('access');}return;}
   const t=e.target.closest('[data-tog]'); if(t){await adminApi('/admin/access',{body:{user:t.dataset.tog,status:t.dataset.st}});return loadAdmin('access');}
@@ -389,7 +390,8 @@ document.addEventListener('click',async e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='chatin'&&!busy)chat();});
 
 (async function init(){
-  if(CFG.makeWebhook){try{const r=await call('me');role=r.role;me={name:r.name};}catch(e){role='user';if(/оступ/.test(e.message)){document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:#f1e9dc">'+esc(e.message)+'</div>';return;}}}
+  if(CFG.apiUrl){if(!(tg&&tg.initData)){document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:var(--ink)">Откройте в приложении.</div>';return;}
+  try{const r=await call('me');role=r.role;me={name:r.name};}catch(e){role='user';if(e.message==='unauthorized'||e.message==='forbidden'){document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:var(--ink)">Откройте в приложении.</div>';return;}if(/оступ/.test(e.message)){document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:#f1e9dc">'+esc(e.message)+'</div>';return;}}}
   else if(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user){me.name='@'+(tg.initDataUnsafe.user.username||tg.initDataUnsafe.user.id);}
   render();
 })();
