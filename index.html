@@ -86,6 +86,18 @@ body.noscroll{overflow:hidden}
 .tsec{margin-top:20px}.tsec>b{display:block;font-size:13px;color:var(--or);margin-bottom:2px}
 .tsec label{margin-top:10px}
 #txmsg{margin-top:10px}
+.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal[hidden]{display:none}
+.mbox{background:var(--paper);border:1px solid var(--strong);border-radius:6px;max-width:420px;width:100%;max-height:82vh;overflow-y:auto;padding:20px}
+.mbox p{margin:0 0 10px;line-height:1.5}
+.mbox a{color:var(--or);font-weight:700;text-decoration:underline;cursor:pointer}
+.mbox .chk{display:flex;gap:10px;align-items:flex-start;margin:14px 0 4px;font-weight:600;font-size:14px}
+.mbox .chk input{width:20px;height:20px;flex:none}
+.mrow{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.mrow button.go{width:auto;margin:0;padding:12px 20px}
+.mrow button:disabled{opacity:.4;cursor:not-allowed}
+.lg dt{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-top:12px}
+.lg dd{margin:2px 0 0;font-weight:600}
 </style>
 </head>
 <body>
@@ -98,16 +110,27 @@ body.noscroll{overflow:hidden}
 <button id="menubtn" aria-label="Меню" aria-controls="drawer" aria-expanded="false"><i></i><i></i><i></i></button>
 <div id="scrim"></div>
 <aside id="drawer" aria-hidden="true"><div id="dlist"></div></aside>
+<div id="modal" class="modal" hidden><div class="mbox"><div id="mbody"></div><div class="mrow" id="mrow"></div></div></div>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://st.max.ru/js/max-web-app.js"></script>
 <script src="config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ===== НАСТРОЙКИ =====
 // Адрес шлюза лежит в отдельном файле config.js (window.APP_CONFIG = { apiUrl: '…' }), чтобы обновление этой страницы его не затирало.
 const CFG = { apiUrl: (window.APP_CONFIG && window.APP_CONFIG.apiUrl) || '' };
-const tg = window.Telegram && window.Telegram.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
+// Платформа: Telegram или MAX. Данные запуска (initData) приходят от мессенджера и проверяются на сервере.
+function hashInit(){try{return new URLSearchParams(location.hash.slice(1)).get('WebAppData')||'';}catch(e){return '';}}
+const PLAT=(()=>{
+  const t=window.Telegram&&window.Telegram.WebApp,m=window.WebApp;
+  if(t&&t.initData) return {id:'tg',sdk:t,initData:t.initData};
+  const mi=(m&&m.initData)||hashInit();
+  if(mi) return {id:'max',sdk:m||null,initData:mi};
+  return {id:'',sdk:null,initData:''};
+})();
+const tg=PLAT.sdk;   // SDK клиента (Telegram или MAX), null вне мессенджера
+try{ if(tg&&typeof tg.ready==='function') tg.ready(); if(PLAT.id==='tg'&&typeof tg.expand==='function') tg.expand(); }catch(e){}
 
 const MONTHS=['ЯНВАРЬ','ФЕВРАЛЬ','МАРТ','АПРЕЛЬ','МАЙ','ИЮНЬ','ИЮЛЬ','АВГУСТ','СЕНТЯБРЬ','ОКТЯБРЬ','НОЯБРЬ','ДЕКАБРЬ'];
 const CH=['НТВ','ПЕРВЫЙ КАНАЛ','ПЯТНИЦА','РЕН ТВ','РОССИЯ 1','СТС','ТВ ЦЕНТР','ТВ-3','ТНТ','ДОМАШНИЙ'];
@@ -149,7 +172,8 @@ const tx=(k,d)=>{const v=TXT[k];return typeof v==='string'&&v.trim()?v:d;};
 const TXKEY='mm_txt';
 function loadTxtCache(){try{TXT=JSON.parse(localStorage.getItem(TXKEY)||'{}')||{};}catch(e){TXT={};}}
 function saveTxtCache(){try{localStorage.setItem(TXKEY,JSON.stringify(TXT));}catch(e){}}
-const BRAND_TX=[['brand.name','Максимедиа','Название агентства в шапке'],['brand.sub','Рекламное агентство в ТВ-размещении','Подпись под названием'],['brand.city','Нижневартовск','Город в шапке справа'],['brand.slogan','Ваш бренд в каждом доме','Слоган в шапке справа'],['foot','Планируем. Размещаем. Растим ваш бренд.','Строка внизу страницы'],['chat.hello','Здравствуйте! Чем помочь?','Приветствие в чате'],['chat.ph','Сообщение','Подсказка в поле чата']];
+const BRAND_TX=[['brand.name','Максимедиа','Название агентства в шапке'],['brand.sub','Рекламное агентство в ТВ-размещении','Подпись под названием'],['brand.city','Нижневартовск','Город в шапке справа'],['brand.slogan','Ваш бренд в каждом доме','Слоган в шапке справа'],['foot','Планируем. Размещаем. Растим ваш бренд.','Строка внизу страницы'],['chat.hello','Здравствуйте! Чем помочь?','Приветствие в чате'],['chat.ph','Сообщение','Подсказка в поле чата'],
+  ['legal.owner','','Документы: правообладатель и оператор (наименование)'],['legal.address','','Документы: адрес места нахождения'],['legal.reg','','Документы: ОГРН или ИНН'],['legal.contact','','Документы: контакты для вопросов и жалоб'],['legal.terms','','Документы: ссылка на условия использования (https://…)'],['legal.privacy','','Документы: ссылка на политику обработки персональных данных (https://…)']];
 function textSections(){
   const secs=[{title:'Общее',items:BRAND_TX.map(([k,d,l])=>({k,d,l}))}];
   [...PAGES,...ADMIN].forEach(p=>{
@@ -167,7 +191,7 @@ function applyBrand(){
 // ===== СЕТЬ =====
 // Все запросы идут на один вебхук Make. Форма (не JSON) — чтобы браузер не делал предзапрос CORS.
 async function call(action,body={}){
-  const msg={action,initData:tg?tg.initData:'',...body};
+  const msg={action,platform:PLAT.id,initData:PLAT.initData,...body};
   let r,txt;
   try{ r=await fetch(CFG.apiUrl,{method:'POST',body:new URLSearchParams({payload:JSON.stringify(msg)})}); }
   catch(e){ throw new Error('Нет связи со шлюзом ('+((e&&e.message)||e)+'). Проверьте адрес шлюза и доступ «Все» в его настройках публикации.'); }
@@ -176,6 +200,7 @@ async function call(action,body={}){
   try{ j=JSON.parse(txt); }
   catch(e){ throw new Error('Шлюз ответил не JSON (код '+r.status+'): '+txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,110)); }
   if(j===null||typeof j!=='object') throw new Error('Пустой ответ шлюза (код '+r.status+')');
+  if(j.error==='expired') throw new Error('Сессия устарела: закройте приложение и откройте его заново.');
   if(j.error) throw new Error(j.error);
   if(!r.ok) throw new Error('Ошибка '+r.status);
   return j;
@@ -237,8 +262,9 @@ function renderPlan(box,r){
   box.innerHTML=`${r.demo?'<b>Демо-данные: расчёт на сервере ещё не подключён</b>':'<b>Медиаплан</b>'}
   <div class="kpis">${[['Канал',S.channel],['Стратегия',S.strategy],['Цена эффективного зрителя',S.ceff],['Эффективных зрителей',S.people]].map(([l,v])=>`<div class="kpi"><b>${esc(v)}</b><span>${l}</span></div>`).join('')}</div>
   ${r.info?`<div class="note">Выходов: ${r.info.spots} из ${r.info.maxSpots} · период: ${esc(r.info.period)} · по тарифу канала ≈ ${r.info.tariffTotal.toLocaleString('ru-RU')} ₽ при бюджете ${r.info.budget.toLocaleString('ru-RU')} ₽${(r.info.warnings||[]).map(w=>'<br>⚠ '+esc(w)).join('')}</div>`:''}
-  <div class="gwrap">${t}</div><button class="go mini" id="dl">Скачать Excel</button>`;
-  $('#dl').onclick=()=>{
+  <div class="gwrap">${t}</div>${PLAT.id==='max'?'<button class="go mini" id="plshare">Отправить сводку в чат</button><p class="note">В MAX таблицу скачать нельзя: откройте приложение в Telegram или в браузере.</p>':'<button class="go mini" id="dl">Скачать Excel</button>'}`;
+  if($('#plshare')) $('#plshare').onclick=()=>shareText('Медиаплан · '+S.channel+' · '+S.strategy+'\nЦена эффективного зрителя: '+S.ceff+'\nЭффективных зрителей: '+S.people+(r.info?'\nВыходов: '+r.info.spots+' из '+r.info.maxSpots+', период '+r.info.period+', по тарифу ≈ '+r.info.tariffTotal.toLocaleString('ru-RU')+' ₽':''));
+  if($('#dl')) $('#dl').onclick=()=>{
     if(!window.XLSX){box.append('Библиотека Excel не загружена.');return;}
     const rows=[['',...dates.map(d=>d.toLocaleDateString('ru-RU'))]];
     for(let row=8;row<=24;row++) rows.push([row<19?'Офф-тайм '+row:'Прайм-тайм '+row,...dates.map((d,c)=>map[row+'_'+c]||'')]);
@@ -267,7 +293,7 @@ function render(){
     :`<div class="card" id="f-${p.id}">${p.fields.map(f=>fieldHTML(f,p.id)).join('')}<button class="go" data-run="${p.id}">${esc(tx('p.'+p.id+'.btn',p.btn))}</button></div><div class="out empty" id="o-${p.id}">Здесь появится результат.</div><div class="hist" id="h-${p.id}"></div>`)+`</section>`).join('');
   const item=p=>`<button data-go="${p.id}"><b>${esc(tx('p.'+p.id+'.tab',p.tab))}</b><small>${esc(tx('p.'+p.id+'.tag',p.tag))}</small></button>`;
   const tools=list.filter(p=>!p.admin),adm=list.filter(p=>p.admin);
-  $('#dlist').innerHTML='<div class="dgroup">Инструменты</div>'+tools.map(item).join('')+(adm.length?'<div class="dgroup">Администратор</div>'+adm.map(item).join(''):'');
+  $('#dlist').innerHTML='<div class="dgroup">Инструменты</div>'+tools.map(item).join('')+(adm.length?'<div class="dgroup">Администратор</div>'+adm.map(item).join(''):'')+'<div class="dgroup">Сведения</div><button data-legal><b>Документы и сведения</b><small>Правообладатель, условия, персональные данные</small></button>';
   applyBrand(); renderRole(); restoreAll(); show(current);
 }
 function show(id){
@@ -278,6 +304,49 @@ function show(id){
   window.scrollTo(0,0);
   if(role==='admin'&&ADMIN.some(p=>p.id===id)) loadAdmin(id);
 }
+// ===== ОКНА (подтверждение, документы, согласие) =====
+function modal(html,actions){
+  return new Promise(res=>{
+    const m=$('#modal'),row=$('#mrow'); $('#mbody').innerHTML=html; row.innerHTML='';
+    actions.forEach(a=>{const b=document.createElement('button');b.className=a.primary?'go':'lnk';b.textContent=a.label;
+      if(a.needsCheck) b.disabled=true;
+      b.onclick=()=>{m.hidden=true;res(a.id);}; row.append(b);});
+    const chk=$('#mchk'); if(chk) chk.onchange=()=>row.querySelectorAll('button').forEach((b,i)=>{if(actions[i].needsCheck)b.disabled=!chk.checked;});
+    m.hidden=false;
+  });
+}
+const askConfirm=msg=>modal('<p>'+esc(msg)+'</p>',[{id:'no',label:'Отмена'},{id:'yes',label:'Да',primary:true}]).then(x=>x==='yes');
+function openExternal(url){
+  if(!/^https:\/\//i.test(url||'')) return;
+  try{ if(tg&&typeof tg.openLink==='function') return tg.openLink(url); }catch(e){}
+  window.open(url,'_blank','noopener');
+}
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  try{ const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok; }catch(e){ return false; }
+}
+function shareText(text){
+  try{ if(PLAT.id==='max'&&tg&&typeof tg.shareMaxContent==='function') return tg.shareMaxContent({text}); }catch(e){}
+  return copyText(text);
+}
+// сведения о правообладателе и документы (правила MAX требуют показывать их пользователю)
+function legalLinks(){
+  const L=[['legal.terms','Условия использования'],['legal.privacy','Политика обработки персональных данных']];
+  return L.map(([k,l])=>{const u=tx(k,'');return /^https:\/\//i.test(u)?`<p><a data-ext="${esc(u)}">${l}</a></p>`:'';}).join('');
+}
+function openLegal(){
+  const rows=[['legal.owner','Правообладатель и оператор'],['legal.address','Адрес'],['legal.reg','Регистрационные данные'],['legal.contact','Контакты для вопросов и жалоб']]
+    .map(([k,l])=>tx(k,'')?`<dt>${l}</dt><dd>${esc(tx(k,''))}</dd>`:'').join('');
+  modal('<p><b>Документы и сведения</b></p>'+(rows?`<dl class="lg">${rows}</dl>`:'<p>Сведения пока не заполнены.</p>')+legalLinks(),[{id:'ok',label:'Закрыть',primary:true}]);
+}
+async function ensureConsent(){
+  const t=tx('legal.terms',''),p=tx('legal.privacy',''); if(!t&&!p) return;
+  const ver=t+'|'+p; let got=''; try{got=localStorage.getItem('mm_consent')||'';}catch(e){}
+  if(got===ver) return;
+  await modal('<p><b>Условия использования</b></p><p>Чтобы пользоваться сервисом, примите условия использования и политику обработки персональных данных.</p>'+legalLinks()+'<label class="chk"><input type="checkbox" id="mchk"><span>Я ознакомился и принимаю условия</span></label>',[{id:'ok',label:'Принять и продолжить',primary:true,needsCheck:true}]);
+  try{localStorage.setItem('mm_consent',ver);}catch(e){}
+}
+
 function openDrawer(v){
   const d=$('#drawer'); if(!d) return;
   d.classList.toggle('open',v); $('#scrim').classList.toggle('open',v);
@@ -350,7 +419,7 @@ function showText(p,box,txt){
   box.className='out';box.innerHTML='<b>'+esc(tx('p.'+p.id+'.title',p.title))+'</b>';box.append(document.createTextNode(txt));
   const ac=document.createElement('div');ac.className='acts';
   ac.innerHTML='<input class="rv" placeholder="Что изменить? Например: короче, веселее">'+
-    `<button class="go mini" data-rev="${p.id}">Доработать</button>`+(p.word?`<button class="go mini" data-word="${p.id}">Скачать Word</button>`:'');
+    `<button class="go mini" data-rev="${p.id}">Доработать</button>`+(p.word?(PLAT.id==='max'?`<button class="go mini" data-share="${p.id}">Отправить в чат</button><button class="go mini" data-copy="${p.id}">Скопировать</button>`:`<button class="go mini" data-word="${p.id}">Скачать Word</button>`):'');
   box.append(ac);
 }
 function showRec(p,box,rec){
@@ -372,7 +441,7 @@ function restoreAll(){
 }
 function clearHistory(){
   const go=()=>{store={};saveStore();render();};
-  if(tg&&tg.showConfirm) tg.showConfirm('Очистить сохранённую историю?',ok=>{if(ok)go();}); else if(confirm('Очистить сохранённую историю?')) go();
+  askConfirm('Очистить сохранённую историю?').then(ok=>{if(ok)go();});
 }
 
 // ===== ЗАПУСК КОМАНД =====
@@ -456,10 +525,14 @@ document.addEventListener('click',async e=>{
   if(e.target.id==='scrim') return openDrawer(false);
   const g=e.target.closest('[data-go]'); if(g) return show(g.dataset.go);
   if(e.target.id==='txsave') return saveTexts(false);
-  if(e.target.id==='txreset'){const go=()=>saveTexts(true);if(tg&&tg.showConfirm)tg.showConfirm('Вернуть все тексты к стандартным?',ok=>{if(ok)go();});else if(confirm('Вернуть все тексты к стандартным?'))go();return;}
+  if(e.target.id==='txreset'){askConfirm('Вернуть все тексты к стандартным?').then(ok=>{if(ok)saveTexts(true);});return;}
   const r=e.target.closest('[data-run]'); if(r&&!busy) return run(r.dataset.run);
   const rv=e.target.closest('[data-rev]'); if(rv&&!busy) return revise(rv.dataset.rev);
   const wd=e.target.closest('[data-word]'); if(wd) return wordDl(wd.dataset.word);
+  const sh=e.target.closest('[data-share]'); if(sh){const r=store[sh.dataset.share];if(r&&r.text)shareText(r.text);return;}
+  const cp=e.target.closest('[data-copy]'); if(cp){const r=store[cp.dataset.copy];if(r&&r.text)copyText(r.text).then(ok=>{cp.textContent=ok?'Скопировано':'Не удалось';setTimeout(()=>{cp.textContent='Скопировать';},1800);});return;}
+  const ex=e.target.closest('[data-ext]'); if(ex){e.preventDefault();return openExternal(ex.dataset.ext);}
+  if(e.target.closest('[data-legal]')) return openLegal();
   const hh=e.target.closest('[data-hist]'); if(hh&&!busy) return openHist(hh.dataset.hid,+hh.dataset.hist);
   if(e.target.id==='clr') return clearHistory();
   if(e.target.id==='chatsend'&&!busy) return chat();
@@ -475,20 +548,20 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')openDrawer(false);if
   loadTxtCache();
   const stop=m=>{document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:var(--ink)">'+esc(m)+'</div>';};
   if(CFG.apiUrl){
-    if(!(tg&&tg.initData)){stop('Откройте в приложении.');return;}
+    if(!PLAT.initData){stop('Откройте приложение из чата с ботом.');return;}
     try{
       const [r,t]=await Promise.all([call('me'),call('texts_get').catch(()=>null)]);
       role=r.role;me={name:r.name};
       if(t&&t.texts&&typeof t.texts==='object'){TXT=t.texts;saveTxtCache();}
     }catch(e){
       role='user';
-      if(e.message==='unauthorized'||e.message==='forbidden'){stop('Откройте в приложении.');return;}
-      if(/оступ/.test(e.message)){stop(e.message);return;}
+      if(e.message==='unauthorized'||e.message==='forbidden'){stop('Откройте приложение из чата с ботом.');return;}
+      if(/оступ|устарела|не настроен/.test(e.message)){stop(e.message);return;}
     }
   }
-  else if(tg&&tg.initData){stop('Не задан адрес шлюза: создайте файл config.js рядом с index.html.');return;}
-  else if(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user){me.name='@'+(tg.initDataUnsafe.user.username||tg.initDataUnsafe.user.id);}
+  else if(PLAT.initData){stop('Не задан адрес шлюза: создайте файл config.js рядом с index.html.');return;}
   render();
+  ensureConsent();
 })();
 </script>
 </body>
