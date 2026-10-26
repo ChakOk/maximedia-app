@@ -13,7 +13,7 @@
 *{box-sizing:border-box}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;min-height:100%;color:var(--ink);font-family:Manrope,system-ui,sans-serif;background:var(--bg);overflow-x:hidden}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
+body::before{content:"";position:fixed;top:0;right:0;bottom:0;left:0;pointer-events:none;opacity:.18;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
 body::after{content:"";position:fixed;right:-120px;top:70px;width:300px;height:300px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 35% 30%,var(--or2),var(--or));opacity:.16}
 .app{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:18px 18px 48px}
 .brand{display:flex;align-items:center;gap:10px;padding:2px 0 14px 54px;border-bottom:1px solid var(--strong)}
@@ -66,14 +66,14 @@ input:focus,textarea:focus,select:focus{border-color:var(--or);box-shadow:0 0 0 
 .gr td.on{background:var(--or);color:#fff}
 .go.mini{margin-top:6px;font-size:14px;padding:11px}
 .brand bdi{display:inline}
-#menubtn{position:fixed;z-index:30;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;width:42px;height:42px;border:0;border-radius:4px;background:var(--strong);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0}
+#menubtn{position:fixed;z-index:30;top:12px;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;width:42px;height:42px;border:0;border-radius:4px;background:var(--strong);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0}
 #menubtn i{display:block;width:20px;height:2.5px;border-radius:2px;background:var(--bg);transition:transform .2s,opacity .2s}
 #menubtn[aria-expanded="true"] i:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
 #menubtn[aria-expanded="true"] i:nth-child(2){opacity:0}
 #menubtn[aria-expanded="true"] i:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
-#scrim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
+#scrim{position:fixed;top:0;right:0;bottom:0;left:0;z-index:20;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
 #scrim.open{opacity:1;pointer-events:auto}
-#drawer{position:fixed;z-index:25;top:0;bottom:0;left:0;width:min(86vw,330px);background:var(--paper);border-right:1px solid var(--strong);transform:translateX(-104%);transition:transform .25s ease,visibility .25s;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 68px) 0 calc(env(safe-area-inset-bottom,0px) + 24px);visibility:hidden}
+#drawer{position:fixed;z-index:25;top:0;bottom:0;left:0;width:min(86vw,330px);background:var(--paper);border-right:1px solid var(--strong);transform:translateX(-104%);transition:transform .25s ease,visibility .25s;overflow-y:auto;padding:68px 0 24px;padding:calc(env(safe-area-inset-top,0px) + 68px) 0 calc(env(safe-area-inset-bottom,0px) + 24px);visibility:hidden}
 #drawer.open{transform:none;visibility:visible}
 #drawer .dgroup{padding:16px 20px 6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
 #drawer button{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);padding:13px 20px;cursor:pointer;font-family:Manrope,sans-serif}
@@ -86,7 +86,7 @@ body.noscroll{overflow:hidden}
 .tsec{margin-top:20px}.tsec>b{display:block;font-size:13px;color:var(--or);margin-bottom:2px}
 .tsec label{margin-top:10px}
 #txmsg{margin-top:10px}
-.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{position:fixed;top:0;right:0;bottom:0;left:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
 .modal[hidden]{display:none}
 .mbox{background:var(--paper);border:1px solid var(--strong);border-radius:6px;max-width:420px;width:100%;max-height:82vh;overflow-y:auto;padding:20px}
 .mbox p{margin:0 0 10px;line-height:1.5}
@@ -121,14 +121,24 @@ body.noscroll{overflow:hidden}
 // Адрес шлюза лежит в отдельном файле config.js (window.APP_CONFIG = { apiUrl: '…' }), чтобы обновление этой страницы его не затирало.
 const CFG = { apiUrl: (window.APP_CONFIG && window.APP_CONFIG.apiUrl) || '' };
 // Платформа: Telegram или MAX. Данные запуска (initData) приходят от мессенджера и проверяются на сервере.
-function hashInit(){try{return new URLSearchParams(location.hash.slice(1)).get('WebAppData')||'';}catch(e){return '';}}
+function hashParam(name){try{const h=location.hash.replace(/^#/,'');for(const kv of h.split('&')){const i=kv.indexOf('=');if(i>0&&kv.slice(0,i)===name)return decodeURIComponent(kv.slice(i+1));}}catch(e){}return '';}
+function storedTgInit(){try{return (JSON.parse(sessionStorage.getItem('__telegram__initParams')||'{}')||{}).tgWebAppData||'';}catch(e){return '';}}
+const SDK={tg:!!window.Telegram,max:!!window.WebApp};      // загрузились ли компоненты мессенджеров (telegram.org, st.max.ru)
+const BUILD='2026-10-27 · v7';
+// Данные запуска берём у компонента мессенджера, а если он не загрузился (закрыт telegram.org), из адреса страницы.
 const PLAT=(()=>{
   const t=window.Telegram&&window.Telegram.WebApp,m=window.WebApp;
-  if(t&&t.initData) return {id:'tg',sdk:t,initData:t.initData};
-  const mi=(m&&m.initData)||hashInit();
-  if(mi) return {id:'max',sdk:m||null,initData:mi};
-  return {id:'',sdk:null,initData:''};
+  if(t&&t.initData) return {id:'tg',sdk:t,initData:t.initData,src:'sdk'};
+  const ti=hashParam('tgWebAppData')||storedTgInit();
+  if(ti) return {id:'tg',sdk:t||null,initData:ti,src:'адрес'};
+  const mi=(m&&m.initData)||hashParam('WebAppData');
+  if(mi) return {id:'max',sdk:m||null,initData:mi,src:(m&&m.initData)?'sdk':'адрес'};
+  return {id:'',sdk:null,initData:'',src:''};
 })();
+function diag(){
+  const sdk=PLAT.id==='max'?SDK.max:SDK.tg;
+  return 'Диагностика: платформа '+(PLAT.id||'не определена')+'; компонент мессенджера '+(sdk?'загружен':'не загружен (возможно, закрыт telegram.org)')+'; данные запуска '+(PLAT.initData?'есть ('+PLAT.src+')':'нет')+'; шлюз '+(CFG.apiUrl?'задан':'не задан')+'; сборка '+BUILD;
+}
 const tg=PLAT.sdk;   // SDK клиента (Telegram или MAX), null вне мессенджера
 try{ if(tg&&typeof tg.ready==='function') tg.ready(); if(PLAT.id==='tg'&&typeof tg.expand==='function') tg.expand(); }catch(e){}
 
@@ -192,10 +202,18 @@ function applyBrand(){
 // Все запросы идут на один вебхук Make. Форма (не JSON) — чтобы браузер не делал предзапрос CORS.
 async function call(action,body={}){
   const msg={action,platform:PLAT.id,initData:PLAT.initData,...body};
+  const ms=(window.APP_CONFIG&&window.APP_CONFIG.timeoutMs)||(action==='run'?100000:30000);
+  const ctl=typeof AbortController==='function'?new AbortController():null, timer=ctl?setTimeout(()=>ctl.abort(),ms):null;
   let r,txt;
-  try{ r=await fetch(CFG.apiUrl,{method:'POST',body:new URLSearchParams({payload:JSON.stringify(msg)})}); }
-  catch(e){ throw new Error('Нет связи со шлюзом ('+((e&&e.message)||e)+'). Проверьте адрес шлюза и доступ «Все» в его настройках публикации.'); }
-  txt=await r.text();
+  try{
+    r=await fetch(CFG.apiUrl,{method:'POST',body:new URLSearchParams({payload:JSON.stringify(msg)}),signal:ctl?ctl.signal:undefined});
+    txt=await r.text();
+  }catch(e){
+    if(timer)clearTimeout(timer);
+    if(e&&e.name==='AbortError') throw new Error('Нет ответа от шлюза за '+Math.round(ms/1000)+' с. Возможно, у вас закрыт доступ к Google (script.google.com): включите VPN или смените сеть и откройте приложение заново.');
+    throw new Error('Нет связи со шлюзом ('+((e&&e.message)||e)+'). Проверьте интернет; если доступ к Google закрыт, включите VPN.');
+  }
+  if(timer)clearTimeout(timer);
   let j;
   try{ j=JSON.parse(txt); }
   catch(e){ throw new Error('Шлюз ответил не JSON (код '+r.status+'): '+txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,110)); }
@@ -337,7 +355,7 @@ function legalLinks(){
 function openLegal(){
   const rows=[['legal.owner','Правообладатель и оператор'],['legal.address','Адрес'],['legal.reg','Регистрационные данные'],['legal.contact','Контакты для вопросов и жалоб']]
     .map(([k,l])=>tx(k,'')?`<dt>${l}</dt><dd>${esc(tx(k,''))}</dd>`:'').join('');
-  modal('<p><b>Документы и сведения</b></p>'+(rows?`<dl class="lg">${rows}</dl>`:'<p>Сведения пока не заполнены.</p>')+legalLinks(),[{id:'ok',label:'Закрыть',primary:true}]);
+  modal('<p><b>Документы и сведения</b></p>'+(rows?`<dl class="lg">${rows}</dl>`:'<p>Сведения пока не заполнены.</p>')+legalLinks()+`<p class="note">${esc(diag())}</p>`,[{id:'ok',label:'Закрыть',primary:true}]);
 }
 async function ensureConsent(){
   const t=tx('legal.terms',''),p=tx('legal.privacy',''); if(!t&&!p) return;
@@ -546,29 +564,32 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')openDrawer(false);if
 
 (async function init(){
   loadTxtCache();
-  const stop=m=>{document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:var(--ink)">'+esc(m)+'</div>';};
-  if(CFG.apiUrl){
-    if(!PLAT.initData){stop('Откройте приложение из чата с ботом.');return;}
-    try{
-      const [r,t]=await Promise.all([call('me'),call('texts_get').catch(()=>null)]);
-      role=r.role;me={name:r.name};
-      if(t&&t.texts&&typeof t.texts==='object'){TXT=t.texts;saveTxtCache();}
-    }catch(e){
-      // Любая ошибка входа показывается пользователю с подсказкой, а не прячется: так видно, где именно сбой настройки
-      const HINT={
-        unauthorized:'Откройте приложение из чата с ботом.',
-        no_init_data:'Make не получил данные пользователя. Проверьте, что в модуле 2 в Make заполнена переменная gateSecret (то же значение, что GATE_SECRET в шлюзе).',
-        bad_signature:'Make не принял подпись Telegram. Проверьте botToken в модуле 2 или задайте WEBAPP_SECRET в шлюзе.',
-        forbidden:'Make отклонил секрет шлюза. Значения GATE_SECRET в шлюзе и gateSecret в модуле 2 должны совпадать.',
-        bad_identity:'Шлюз передал в Make неверные данные пользователя. Обновите Code.gs до последней версии и опубликуйте новую версию развёртывания.',
-        bad_payload:'Make получил непонятный запрос. Проверьте, что в модуле 2 переменная payload = {{…payload}} из Webhook.'
-      };
-      stop(HINT[e.message]||e.message);return;
+  const stop=m=>{document.body.innerHTML='<div style="padding:48px 24px;font:600 19px/1.5 system-ui,sans-serif;color:var(--ink)"><p>'+esc(m)+'</p><p style="font:500 12px/1.5 system-ui,sans-serif;color:var(--mute)">'+esc(diag())+'</p><button class="go" onclick="location.reload()" style="width:auto;padding:12px 22px">Повторить</button></div>';};
+  const pages=$('#pages'); if(pages) pages.innerHTML='<p class="note" id="loading">Загрузка…</p>';
+  const slow=setTimeout(()=>{const l=$('#loading');if(l)l.textContent='Загрузка идёт дольше обычного. Если экран не меняется больше полуминуты, проверьте интернет или включите VPN.';},10000);
+  try{
+    if(CFG.apiUrl){
+      if(!PLAT.initData){stop((SDK.tg||SDK.max)?'Откройте приложение из чата с ботом.':'Не загрузился компонент мессенджера (telegram.org). Проверьте интернет или включите VPN и откройте приложение заново.');return;}
+      try{
+        const [r,t]=await Promise.all([call('me'),call('texts_get').catch(()=>null)]);
+        role=r.role;me={name:r.name};
+        if(t&&t.texts&&typeof t.texts==='object'){TXT=t.texts;saveTxtCache();}
+      }catch(e){
+        // Любая ошибка входа показывается пользователю с подсказкой, а не прячется: так видно, где именно сбой настройки
+        const HINT={
+          unauthorized:'Откройте приложение из чата с ботом.',
+          no_init_data:'Не получены данные пользователя. Откройте приложение заново из чата с ботом.',
+          bad_signature:'Подпись не принята. Откройте приложение заново из чата с ботом или сообщите администратору.',
+          forbidden:'Доступ отклонён. Сообщите администратору.',
+          bad_request:'Шлюз не понял запрос. Обновите страницу или сообщите администратору.'
+        };
+        stop(HINT[e.message]||e.message);return;
+      }
     }
-  }
-  else if(PLAT.initData){stop('Не задан адрес шлюза: создайте файл config.js рядом с index.html.');return;}
-  render();
-  ensureConsent();
+    else if(PLAT.initData){stop('Не задан адрес шлюза: создайте файл config.js рядом с index.html.');return;}
+    render();
+    ensureConsent();
+  }finally{ clearTimeout(slow); }
 })();
 </script>
 </body>
