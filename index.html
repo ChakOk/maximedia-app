@@ -554,9 +554,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')openDrawer(false);if
       role=r.role;me={name:r.name};
       if(t&&t.texts&&typeof t.texts==='object'){TXT=t.texts;saveTxtCache();}
     }catch(e){
-      role='user';
-      if(e.message==='unauthorized'||e.message==='forbidden'){stop('Откройте приложение из чата с ботом.');return;}
-      if(/оступ|устарела|не настроен/.test(e.message)){stop(e.message);return;}
+      // Любая ошибка входа показывается пользователю с подсказкой, а не прячется: так видно, где именно сбой настройки
+      const HINT={
+        unauthorized:'Откройте приложение из чата с ботом.',
+        no_init_data:'Make не получил данные пользователя. Проверьте, что в модуле 2 в Make заполнена переменная gateSecret (то же значение, что GATE_SECRET в шлюзе).',
+        bad_signature:'Make не принял подпись Telegram. Проверьте botToken в модуле 2 или задайте WEBAPP_SECRET в шлюзе.',
+        forbidden:'Make отклонил секрет шлюза. Значения GATE_SECRET в шлюзе и gateSecret в модуле 2 должны совпадать.',
+        bad_identity:'Шлюз передал в Make неверные данные пользователя. Обновите Code.gs до последней версии и опубликуйте новую версию развёртывания.',
+        bad_payload:'Make получил непонятный запрос. Проверьте, что в модуле 2 переменная payload = {{…payload}} из Webhook.'
+      };
+      stop(HINT[e.message]||e.message);return;
     }
   }
   else if(PLAT.initData){stop('Не задан адрес шлюза: создайте файл config.js рядом с index.html.');return;}
