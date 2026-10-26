@@ -370,7 +370,7 @@ async function loadAdmin(id){
         `<label>Лимит запросов на человека в день</label><div class="row"><input id="lim" type="number" value="${esc(lim)}"><button class="go" id="setlim">Ок</button></div>`;}
     if(id==='texts') return renderTextEditor(box);
     if(id==='db'){const d=await adminApi('/admin/db');
-      box.innerHTML=kpi([['База',d.name],['Данные за',d.updated]])+`<p class="note">Данные Медиаскопа (цены, охваты, рейтинги, население) зашиты в модуль расчёта в Make. Чтобы обновить базу, пришлите новый Excel — модуль пересоберём.</p>`;}
+      box.innerHTML=kpi([['База',d.name],['Состояние',d.updated]])+`<p class="note">Данные Медиаскопа (цены, охваты, рейтинги, население) зашиты в модуль расчёта в Make. Чтобы обновить базу, пришлите новый Excel — модуль пересоберём.</p>`;}
   }catch(e){box.textContent='Не удалось загрузить: '+e.message;}
 }
 
